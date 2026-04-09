@@ -4,7 +4,7 @@ function createBot() {
     return mineflayer.createBot({
         host: 'localhost',
         port: 52303,
-        username: 'Bot12'
+        username: 'Bott'
     })
 }
 

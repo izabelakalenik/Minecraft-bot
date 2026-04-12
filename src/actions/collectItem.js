@@ -1,22 +1,28 @@
 const moveTo = require('../movement/navigator')
 
-async function collectWood(bot, mcData, printInventory) {
-    const woodBlockName = 'oak_log'
-    const woodNeeded = 3
+async function collectItem(bot, mcData, task) {
+    const blockName = task.blockName
+    const amountNeeded = task.amount
 
+    bot.chat(`Ide pozbierać ${amountNeeded} x ${blockName}`)
+    
     while (true) {
         const count = bot.inventory.count(
-            mcData.itemsByName[woodBlockName].id
+            mcData.itemsByName[blockName].id
         )
 
-        if (count >= woodNeeded) {
-            console.log('Mam już drewno')
+        if (count >= amountNeeded) {
+            console.log(`Mam juz ${amountNeeded} x ${blockName}`)
+            bot.chat(`Mam juz ${amountNeeded} x ${blockName}`)
             break
+        } else {
+            console.log(`Mam ${count}/${amountNeeded} ${blockName}`)
+            bot.chat(`Mam ${count}/${amountNeeded} ${blockName}`)
         }
 
         const block = bot.findBlock({
-            matching: mcData.blocksByName[woodBlockName].id,
-            maxDistance: 16
+            matching: mcData.blocksByName[blockName].id,
+            maxDistance: 128
         })
 
         if (!block) {
@@ -30,9 +36,7 @@ async function collectWood(bot, mcData, printInventory) {
 
         try {
             const targetPos = block.position.offset(1, 0, 0)
-
             await moveTo(bot, targetPos)
-
             await bot.lookAt(block.position.offset(0.5, 0.5, 0.5))
 
             if (bot.canDigBlock(block)) {
@@ -50,12 +54,10 @@ async function collectWood(bot, mcData, printInventory) {
                 await moveTo(bot, droppedItem.position)
             }
 
-            printInventory(bot)
-
         } catch (err) {
             console.log('Błąd:', err.message)
         }
     }
 }
 
-module.exports = collectWood
+module.exports = collectItem

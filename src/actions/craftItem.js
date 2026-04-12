@@ -1,31 +1,20 @@
-async function craftWoodenAxe(bot, mcData, printInventory) {
-    const axeRecipe = bot.recipesFor(
-        mcData.itemsByName['wooden_axe'].id,
-        null,
-        1,
-        null
-    )[0]
+async function craftItem(bot, mcData, task) {
+    const name = task.recipe
+    const amount = task.amount || 1
 
-    if (!axeRecipe) {
-        console.log('Nie mam przepisu')
+    const item = mcData.itemsByName[name]
+    if (!item) {
+        throw new Error('Nieznany item: ' + name)
+    }
+
+    const recipes = bot.recipesFor(item.id, null, 1, null)
+    if (!recipes || recipes.length === 0) {
+        console.log(`Nie mam przepisu na ${name}`)
         return
     }
 
-    for (const ingredient of axeRecipe.ingredients) {
-        const recipe = bot.recipesFor(ingredient.id, null, 1, null)[0]
-
-        if (recipe) {
-            await bot.craft(recipe, 1, null)
-        }
-    }
-
-    await bot.craft(axeRecipe, 1, null)
-
-    const axe = bot.inventory.items().find(i => i.name === 'wooden_axe')
-
-    if (axe) await bot.equip(axe, 'hand')
-
-    printInventory(bot)
+    await bot.craft(recipes[0], amount, null)
+    console.log(`Crafted: ${name} x ${amount}`)
 }
 
-module.exports = craftWoodenAxe
+module.exports = craftItem

@@ -3,8 +3,8 @@ const mineflayer = require('mineflayer')
 function createBot() {
     return mineflayer.createBot({
         host: 'localhost',
-        port: 52303,
-        username: 'Bott'
+        port: 51910,
+        username: 'Bot12'
     })
 }
 

@@ -1,20 +1,28 @@
-const { goals } = require('mineflayer-pathfinder')
-const { GoalNear } = goals
+const { GoalNear } = require('mineflayer-pathfinder').goals
 
-async function moveTo(bot, position) {
-    return new Promise((resolve) => {
-        bot.pathfinder.setGoal(
-            new GoalNear(
-                Math.floor(position.x),
-                Math.floor(position.y),
-                Math.floor(position.z),
-                1
-            )
+async function moveTo(bot, position, timeout = 15000) {
+    return new Promise((resolve, reject) => {
+        const goal = new GoalNear(
+            Math.floor(position.x),
+            Math.floor(position.y),
+            Math.floor(position.z),
+            2
         )
+        bot.pathfinder.setGoal(goal)
+        const timer = setTimeout(() => {
+            bot.pathfinder.setGoal(null)
+            reject(new Error("moveTo timeout"))
+        }, timeout)
 
-        bot.once('goal_reached', () => {
-            resolve()
-        })
+        const onUpdate = (result) => {
+            if (result.status === 'arrived') {
+                clearTimeout(timer)
+                bot.removeListener('path_update', onUpdate)
+                resolve()
+            }
+        }
+
+        bot.on('path_update', onUpdate)
     })
 }
 

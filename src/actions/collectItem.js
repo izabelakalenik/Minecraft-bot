@@ -2,7 +2,7 @@ const moveTo = require('../movement/navigator')
 
 // WARNING: If the bot cannot reach the block (e. g. wood is too high) 
 // or the block is not available in the area,
-// bot stops trying to collect it, waits for timeouts maxAttempts and goes to the next task.
+// bot stops trying to collect it, waits for timeouts maxAttempts to expire and goes to the next task.
 
 async function collectItem(bot, mcData, task) {
     const blockName = task.blockName

@@ -4,6 +4,10 @@
 Implementacja autonomicznego bota w grze Minecraft z wykorzystaniem algorytmów podejmowania decyzji i wyszukiwania ścieżki.
 Projekt miałby na celu stworzenie bota, który samodzielnie porusza się po świecie, podejmuje decyzje i wykonuje zadania (np. zbieranie surowców, unikanie zagrożeń).
 
+---
+
+[How to run the project](./How_to_run.md)
+
 ## Autorki
 * Izabela Kalenik
 * Magdalena Szeląg

@@ -4,26 +4,33 @@ async function followMe(bot, mcData, task) {
     const username = task.username
     const player = bot.players[username]
 
-    console.log(`Present players: ${Object.keys(bot.players)}`)
+    console.log(`[FollowMe] Present players: ${Object.keys(bot.players)}`)
 
     if (!player || !player.entity) {
-        console.log(`I don't see player ${username}`)
+        console.log(`[FollowMe] I don't see player ${username}`)
         return
     }
 
-    const target = player.entity.position
+    console.log(`[FollowMe] Following ${username}`)
+    let attempts = 5
+    while (attempts > 0) {
+        if (!player.entity) break
+        const target = player.entity.position
+        const distance = bot.entity.position.distanceTo(target)
+        if (distance <= 4) {
+            console.log(`[FollowMe] Close to ${username} (${distance.toFixed(1)} blocks)`) 
+            return
+        }
 
-    console.log(`Following ${username}`)
-    try {
-        await moveTo(bot, {
-            x: target.x,
-            y: target.y,
-            z: target.z
-        }, 10000, 2)
+        try {
+            await moveTo(bot, target, 12000, 3)
+        } catch (err) {
+            console.log(`[FollowMe] Follow attempt failed: ${err.message}`)
+            break
+        }
 
-        console.log(`Reached ${username}`)
-    } catch (err) {
-        console.log(`Error: ${err.message}`)
+        await bot.waitForTicks(10)
+        attempts -= 1
     }
 }
 

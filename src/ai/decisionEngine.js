@@ -8,25 +8,25 @@ class DecisionEngine {
 
     async run() {
         for (const task of this.tasks) {
-            console.log(`\nZadanie: ${task.type}`)
+            console.log(`\Task: ${task.type}`)
 
             const action = this.actions[task.type]
 
             if (!action) {
-                console.log(`Nieznane zadanie: ${task.type} (pomijam)`)
+                console.log(`Unknown task: ${task.type} (skipping)`)
                 continue
             }
 
             try {
                 await action(this.bot, this.mcData, task)
                 this.actions.printInventory(this.bot)
-                console.log(`✔ Wykonano zadanie: ${task.type}`)
+                console.log(`Task completed: ${task.type}`)
             } catch (err) {
-                console.log(`Błąd podczas zadania: ${task.type}, error message: ${err.message}`)
+                console.log(`Error during task ${task.type}: ${err.message}`)
             }
         }
 
-        console.log('🎉 Wszystkie zadania wykonane')
+        console.log('All tasks completed')
     }
 }
 

@@ -4,16 +4,16 @@ async function followMe(bot, mcData, task) {
     const username = task.username
     const player = bot.players[username]
 
-    console.log(`Obecni gracze: ${Object.keys(bot.players)}`)
+    console.log(`Present players: ${Object.keys(bot.players)}`)
 
     if (!player || !player.entity) {
-        console.log(`❌  Nie widzę gracza: ${username}`)
+        console.log(`I don't see player ${username}`)
         return
     }
 
     const target = player.entity.position
 
-    console.log(`🚶 Idę do ${username}`)
+    console.log(`Following ${username}`)
     try {
         await moveTo(bot, {
             x: target.x,
@@ -21,9 +21,9 @@ async function followMe(bot, mcData, task) {
             z: target.z
         }, 10000, 2)
 
-        console.log(`✅ Dotarłem do ${username}`)
+        console.log(`Reached ${username}`)
     } catch (err) {
-        console.log(`❌ Błąd followMe: ${err.message}`)
+        console.log(`Error: ${err.message}`)
     }
 }
 

@@ -2,12 +2,11 @@ function printInventory(bot) {
     const items = bot.inventory.items()
 
     if (items.length === 0) {
-        console.log('Ekwipunek pusty')
+        console.log('Inventory is empty')
         return
     }
 
-    console.log('\n🎒 Ekwipunek:')
-
+    console.log('\nInventory:')
     const grouped = {}
 
     for (const item of items) {
@@ -16,7 +15,7 @@ function printInventory(bot) {
     }
 
     for (const [name, count] of Object.entries(grouped)) {
-        console.log(`- ${count}x ${name}`)
+        console.log(`- ${count} x ${name}`)
     }
 
     console.log('')

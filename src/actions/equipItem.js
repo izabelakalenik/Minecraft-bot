@@ -3,12 +3,12 @@ async function equipItem(bot, mcData, task) {
     const item = bot.inventory.items().find(i => i.name === name)
 
     if (!item) {
-        console.log(`Nie mam ${name} do wzięcia.`)
+        console.log(`I don't have ${name} to equip.`)
         return
     }
 
     await bot.equip(item, 'hand')
-    console.log(`Wzięto: ${name}`)
+    console.log(`Equipped: ${name}`)
 }
 
 module.exports = equipItem

@@ -7,15 +7,15 @@ async function unequipItem(bot, mcData, task) {
                 await bot.unequip(slot)
             } catch {}
         }
-        console.log("Wszystko zdjęte")
+        console.log("All items unequipped")
         return
     }
 
     try {
         await bot.unequip(task.slot)
-        console.log(`Zdjęto: ${task.slot}`)
+        console.log(`Unequipped: ${task.slot}`)
     } catch (err) {
-        console.log(`Nie mogę zdjąć ${task.slot}: ${err.message}`)
+        console.log(`Error unequipping ${task.slot}: ${err.message}`)
     }
 }
 

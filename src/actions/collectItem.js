@@ -4,7 +4,7 @@ async function collectItem(bot, mcData, task) {
     const blockName = task.blockName
     const amountNeeded = task.amount
 
-    bot.chat(`Ide pozbierać ${amountNeeded} x ${blockName}`)
+    bot.chat(`I'm going to collect ${amountNeeded} x ${blockName}`)
     
     while (true) {
         const count = bot.inventory.count(
@@ -12,12 +12,12 @@ async function collectItem(bot, mcData, task) {
         )
 
         if (count >= amountNeeded) {
-            console.log(`Mam juz ${amountNeeded} x ${blockName}`)
-            bot.chat(`Mam juz ${amountNeeded} x ${blockName}`)
+            console.log(`I already have ${amountNeeded} x ${blockName}`)
+            bot.chat(`I already have ${amountNeeded} x ${blockName}`)
             break
         } else {
-            console.log(`Mam ${count}/${amountNeeded} ${blockName}`)
-            bot.chat(`Mam ${count}/${amountNeeded} ${blockName}`)
+            console.log(`I have ${count}/${amountNeeded} ${blockName}`)
+            bot.chat(`I have ${count}/${amountNeeded} ${blockName}`)
         }
 
         const block = bot.findBlock({
@@ -55,7 +55,7 @@ async function collectItem(bot, mcData, task) {
             }
 
         } catch (err) {
-            console.log('Błąd:', err.message)
+            console.log('Error:', err.message)
         }
     }
 }

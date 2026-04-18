@@ -26,7 +26,7 @@ tasks = [
 ]
 
 bot.once('spawn', () => {
-    console.log('Bot jest z nami')
+    console.log('Bot is present on the server')
 
     const mcData = setupPathfinder(bot)
 

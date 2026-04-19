@@ -15,7 +15,7 @@ function printInventory(bot) {
     }
 
     for (const [name, count] of Object.entries(grouped)) {
-        console.log(`[- ${count} x ${name}`)
+        console.log(`- ${count} x ${name}`)
     }
 
     console.log('')

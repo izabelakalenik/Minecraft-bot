@@ -17,7 +17,7 @@ async function collectItem(bot, mcData, task) {
 
     bot.chat(`I'm going to collect ${amountNeeded} x ${blockName}`)
 
-    const maxAttempts = 5
+    const maxAttempts = 20
     let attempts = 0
 
     while (attempts < maxAttempts) {
@@ -33,7 +33,7 @@ async function collectItem(bot, mcData, task) {
 
         const block = bot.findBlock({
             matching: blockId,
-            maxDistance: 96
+            maxDistance: 300
         })
 
         if (!block) {

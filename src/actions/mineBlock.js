@@ -28,7 +28,7 @@ async function mineBlock(bot, mcData, task) {
         console.log(`[MineBlock] Searching for block (have ${count}/${amountNeeded})`)
         const block = bot.findBlock({
             matching: blockId,
-            maxDistance: 128
+            maxDistance: 300
         })
 
         if (!block) {

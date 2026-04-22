@@ -7,9 +7,10 @@ function setupPathfinder(bot) {
     const mcData = mcDataLoader(bot.version)
 
     const defaultMove = new Movements(bot, mcData)
-
     defaultMove.canDig = true
-    defaultMove.allow1by1towers = false
+    defaultMove.allow1by1towers = true
+    defaultMove.allowSprinting = true
+    defaultMove.allowFreeMotion = false
 
     bot.pathfinder.setMovements(defaultMove)
 

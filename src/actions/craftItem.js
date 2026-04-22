@@ -4,17 +4,17 @@ async function craftItem(bot, mcData, task) {
 
     const item = mcData.itemsByName[name]
     if (!item) {
-        throw new Error('Unknown item: ' + name)
+        throw new Error('[CraftItem] Unknown item: ' + name)
     }
 
     const recipes = bot.recipesFor(item.id, null, 1, null)
     if (!recipes || recipes.length === 0) {
-        console.log(`I don't have a recipe for ${name}`)
+        console.log(`[CraftItem] I don't have a recipe for ${name}`)
         return
     }
 
     await bot.craft(recipes[0], amount, null)
-    console.log(`Crafted: ${amount} x ${name}`)
+    console.log(`[CraftItem] Crafted: ${amount} x ${name}`)
 }
 
 module.exports = craftItem

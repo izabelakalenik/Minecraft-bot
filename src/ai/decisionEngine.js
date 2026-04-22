@@ -1,5 +1,5 @@
 class DecisionEngine {
-    constructor(bot, mcData, actions, tasks) {
+    constructor(bot, mcData, actions, tasks = []) {
         this.bot = bot
         this.mcData = mcData
         this.actions = actions
@@ -7,26 +7,36 @@ class DecisionEngine {
     }
 
     async run() {
-        for (const task of this.tasks) {
-            console.log(`\Task: ${task.type}`)
+        if (!Array.isArray(this.tasks) || this.tasks.length === 0) {
+            console.log('[DecisionEngine] No tasks available')
+            return
+        }
 
+        console.log(`[DecisionEngine] Starting with ${this.tasks.length} task(s)`)
+
+        for (let i = 0; i < this.tasks.length; i++) {
+            const task = this.tasks[i]
+            console.log(`[DecisionEngine] Task ${i + 1}/${this.tasks.length}: ${task.type}`)
+            
             const action = this.actions[task.type]
 
             if (!action) {
-                console.log(`Unknown task: ${task.type} (skipping)`)
+                console.log(`[DecisionEngine] Unknown task: ${task.type}, skipping`)
                 continue
             }
 
             try {
                 await action(this.bot, this.mcData, task)
-                this.actions.printInventory(this.bot)
-                console.log(`Task completed: ${task.type}`)
+                if (typeof this.actions.printInventory === 'function') {
+                    this.actions.printInventory(this.bot)
+                }
+                console.log(`[DecisionEngine] Task completed: ${task.type}`)
             } catch (err) {
-                console.log(`Error during task ${task.type}: ${err.message}`)
+                console.log(`[DecisionEngine] Error during task ${task.type}: ${err.message}`)
             }
         }
 
-        console.log('All tasks completed')
+        console.log('[DecisionEngine] All tasks completed')
     }
 }
 

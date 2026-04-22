@@ -5,17 +5,19 @@ async function unequipItem(bot, mcData, task) {
         for (const slot of slots) {
             try {
                 await bot.unequip(slot)
-            } catch {}
+            } catch (err) {
+                console.log(`[UnequipItem] Error unequipping ${slot}: ${err.message}`)
+            }
         }
-        console.log("All items unequipped")
+        console.log(`[UnequipItem] All items unequipped`)
         return
     }
 
     try {
         await bot.unequip(task.slot)
-        console.log(`Unequipped: ${task.slot}`)
+        console.log(`[UnequipItem] Unequipped: ${task.slot}`)
     } catch (err) {
-        console.log(`Error unequipping ${task.slot}: ${err.message}`)
+        console.log(`[UnequipItem] Error unequipping ${task.slot}: ${err.message}`)
     }
 }
 

@@ -36,11 +36,11 @@ Projekt miałby na celu stworzenie bota, który samodzielnie porusza się po św
 ## *Final milestone*
 ### *Podejmowanie decyzji oparte na kilku drzewach decyzyjnych:*
 * W przypadku wykrycia zagrożenia bot podejmuje decyzję o walce lub ucieczce w zależności od poziomu życia.
-* Jeśli jest noc, idzie spać lub szuka schronienia (np. zakopuje się w ziemi).
-* W przypadku głodu bot szuka jedzenia, a po zdobyciu mięsa piecze w piecu.
+* Jeśli jest noc bot idzie spać lub szuka schronienia (np. zakopuje się w ziemi).
+* W przypadku głodu bot szuka jedzenia, a po zdobyciu mięsa piecze je w piecu.
 * Gdy nie występuje zagrożenie, głód ani noc, bot zdobywa doświadczenie poprzez eksplorację i zbieranie surowców.
 * Bot wyszukuje i wykorzystuje odpowiednie narzędzia do niszczenia bloków, dobierając je w zależności od rodzaju wykonywanej akcji.
-* Jeśli bot napotka wodę, próbuje ją przepłynąć, a jeśli nie jest to możliwe -> tworzy łódkę.
+* Jeśli bot napotka wodę, próbuje ją przepłynąć, a jeśli nie jest to możliwe - tworzy łódkę.
 * W przypadku napotkania lawy bot wybiera alternatywną trasę, a jeśli nie ma innej możliwości, buduje przejście poprzez dodawanie bloków.
 
 #### Drzewa decyzyjne bota:

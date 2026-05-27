@@ -98,3 +98,6 @@ Czy na drodze jest lawa?
   * TAK -> Wybierz inną drogę
   * NIE -> Buduj przejście (dodawaj bloki)
 * NIE -> kontynuuj eksplorację
+
+<img width="2357" height="1022" alt="image" src="https://github.com/user-attachments/assets/fad99479-1e48-4bdd-b597-2200456b4605" />
+

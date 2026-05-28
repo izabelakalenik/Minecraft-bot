@@ -1,24 +1,27 @@
-function printInventory(bot) {
+function getInventory(bot) {
     const items = bot.inventory.items()
 
     if (items.length === 0) {
-        console.log('Inventory is empty')
-        return
+        return 'Inventory is empty'
     }
 
-    console.log('\nInventory:')
     const grouped = {}
 
     for (const item of items) {
-        if (!grouped[item.name]) grouped[item.name] = 0
+        if (!grouped[item.name]) {
+            grouped[item.name] = 0
+        }
+
         grouped[item.name] += item.count
     }
 
+    const title = ['Inventory: ']
+    let content = []
     for (const [name, count] of Object.entries(grouped)) {
-        console.log(`- ${count} x ${name}`)
+        content.push(`${count} x ${name}`)
     }
-
-    console.log('')
+    content = content.join(', ')
+    return title + content
 }
 
-module.exports = printInventory
+module.exports = getInventory

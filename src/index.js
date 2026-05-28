@@ -1,19 +1,18 @@
+const DECISION_INTERVAL = 3_000 // 3 seconds
+
+const followMe = require('./actions/followMe')
+
 const createBot = require('./bot/createBot')
 const setupPathfinder = require('./movement/pathfinder')
-const DecisionEngine = require('./ai/decisionEngine')
-const Planner = require('./ai/planner')
-const botConfig = require('./config/botConfig')
+const botConfig = require('./bot/botConfig')
 
-const collectItem = require('./actions/collectItem')
-const craftItem = require('./actions/craftItem')
-const equipItem = require('./actions/equipItem')
-const unequipItem = require('./actions/unequipItem')
-const followMe = require('./actions/followMe')
-const mineBlock = require('./actions/mineBlock')
+const WorldState = require("./bot/worldState");
+const MainDecisionTree = require("./ai/trees/mainDecisionTree");
+const BotController = require("./ai/botController");
+const ManualModeController = require("./commands/manualModeController");
+const CommandController = require("./commands/commandController");
+const setupChatCommands = require("./commands/setupChatCommands");
 
-const printInventory = require('./utils/inventory')
-
-const actions = { collectItem, craftItem, equipItem, followMe, unequipItem, mineBlock, printInventory }
 
 console.log('[Main] Creating bot...')
 const bot = createBot(botConfig)
@@ -24,16 +23,36 @@ bot.on('login', () => {
 
 bot.once('spawn', () => {
     console.log('[Main] Bot spawned on server')
-    
+
     try {
         const mcData = setupPathfinder(bot)
-        console.log('[Main] Pathfinder initialized')
-        
-        const planner = new Planner(bot, mcData)
-        const tasks = planner.generateTasks()
 
-        const ai = new DecisionEngine(bot, mcData, actions, tasks)
-        ai.run()
+        const worldState = new WorldState(bot)
+        const decisionTree = new MainDecisionTree()
+
+        const botController = new BotController(bot, mcData)
+        const manualMode = new ManualModeController(bot)
+        const commandController = new CommandController(
+            bot,
+            manualMode,
+            worldState
+        )
+
+        setupChatCommands(bot, commandController)
+
+        setInterval(async () => {
+            if (manualMode.isEnabled()) return
+
+            worldState.update()
+            worldState.printState()
+
+            const decision = decisionTree.decide(worldState)
+
+            console.log('[Main] Decided on:', decision)
+
+            await botController.execute(decision)
+        }, DECISION_INTERVAL)
+
     } catch (err) {
         console.log(`[Main] Error initializing: ${err.message}`)
     }

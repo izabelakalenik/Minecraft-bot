@@ -1,5 +1,5 @@
-async function equipItem(bot, mcData, task) {
-    const name = task.item
+async function equipItem(bot, decision) {
+    const name = decision.item
     const item = bot.inventory.items().find(i => i.name === name)
 
     if (!item) {

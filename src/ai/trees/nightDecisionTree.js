@@ -29,6 +29,14 @@ class NightDecisionTree {
             }
         }
 
+        if (state.bedInInventory) {
+            return {
+                type: DECISION_TYPES.PLACE_BED,
+                name: state.bedInInventory.name,
+                amount: 1
+            }
+        }
+
         if (state.hasBedResources) {
             return {
                 type: DECISION_TYPES.CRAFT_BED

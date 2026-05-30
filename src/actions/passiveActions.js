@@ -1,8 +1,10 @@
-async function stayInShelter(bot) {
+// Here are implemented actions that are doing nothing - waiting for a state to change
+
+async function stayInShelter() {
     console.log('[PassiveActions] Staying safely in shelter.')
 }
 
-async function continueSleeping(bot, mcData, decision) {
+async function continueSleeping() {
     console.log('[PassiveActions] Zzz... Bot is sleeping.')
 }
 

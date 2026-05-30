@@ -1,6 +1,6 @@
 const moveTo = require('../movement/navigator')
 
-async function sleep(bot, mcData, decision) {
+async function sleep(bot, decision) {
     const bed = decision.bed
 
     if (!bed) {
@@ -18,10 +18,7 @@ async function sleep(bot, mcData, decision) {
         )
 
         await bot.sleep(bed)
-
         console.log('[Sleep] Bot is sleeping')
-        bot.chat('Sleeping...')
-
     } catch (err) {
         console.log(`[Sleep] Cannot sleep: ${err.message}`)
     }

@@ -1,12 +1,10 @@
 const DECISION_INTERVAL = 3_000 // 3 seconds
 
-const followMe = require('./actions/followMe')
-
 const createBot = require('./bot/createBot')
 const setupPathfinder = require('./movement/pathfinder')
 const botConfig = require('./bot/botConfig')
 
-const WorldState = require("./bot/worldState");
+const WorldState = require("./states/worldState");
 const MainDecisionTree = require("./ai/trees/mainDecisionTree");
 const BotController = require("./ai/botController");
 const ManualModeController = require("./commands/manualModeController");
@@ -25,23 +23,23 @@ bot.once('spawn', () => {
     console.log('[Main] Bot spawned on server')
 
     try {
-        const mcData = setupPathfinder(bot)
+        setupPathfinder(bot)
 
         const worldState = new WorldState(bot)
         const decisionTree = new MainDecisionTree()
 
-        const botController = new BotController(bot, mcData)
-        const manualMode = new ManualModeController(bot)
+        const botController = new BotController(bot)
+        const manualModeController = new ManualModeController(bot)
         const commandController = new CommandController(
             bot,
-            manualMode,
+            manualModeController,
             worldState
         )
 
         setupChatCommands(bot, commandController)
 
         setInterval(async () => {
-            if (manualMode.isEnabled()) return
+            if (manualModeController.isEnabled()) return
 
             worldState.update()
             worldState.printState()

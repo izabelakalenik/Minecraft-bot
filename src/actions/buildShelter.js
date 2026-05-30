@@ -2,7 +2,7 @@ const { Vec3 } = require('vec3')
 
 const MAX_DIG_DOWN_LEVELS = 3
 
-async function buildShelter(bot, mcData, decision) {
+async function buildShelter(bot, decision) {
     console.log('[BuildShelter] Building shelter')
 
     const blockItem = findPlaceableBlock(bot)

@@ -6,7 +6,7 @@ const ATTACK_DELAY = 500
 const LOW_HEALTH_LEVEL = 10
 const MAX_FIGHT_TIME = 15000
 
-async function fight(bot, mcData, decision) {
+async function fight(bot, decision) {
     const target = decision.target
 
     if (!target || !target.isValid) return

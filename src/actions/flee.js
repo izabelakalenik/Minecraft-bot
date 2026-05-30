@@ -2,7 +2,7 @@ const moveTo = require('../movement/navigator')
 
 const FLEE_DISTANCE = 20
 
-async function flee(bot, mcData, decision) {
+async function flee(bot, decision) {
     const target = decision.target
 
     if (!target || !target.position) return

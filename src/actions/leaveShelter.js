@@ -1,8 +1,7 @@
-const MAX_STEPS = 10
+const MAX_STEPS = 3
 
-async function leaveShelter(bot, mcData, decision) {
+async function leaveShelter(bot, decision) {
     console.log('[LeaveShelter] Leaving shelter with stairs')
-    const startY = bot.entity.position.y
 
     for (let i = 0; i < MAX_STEPS; i++) {
         const pos = bot.entity.position.floored()
@@ -26,15 +25,16 @@ async function leaveShelter(bot, mcData, decision) {
         bot.setControlState('jump', true)
         bot.setControlState('forward', true)
 
-        await bot.waitForTicks(15)
-
-        if (isOutside(bot, startY)) {
-            console.log('[LeaveShelter] Left shelter')
-            return
-        }
+        await bot.waitForTicks(5)
+        stopMoving(bot)
     }
-
+    stopMoving(bot)
     console.log('[LeaveShelter] Could not leave shelter')
+}
+
+function stopMoving(bot) {
+    bot.setControlState('jump', false)
+    bot.setControlState('forward', false)
 }
 
 async function digIfPossible(bot, block, label) {
@@ -52,26 +52,24 @@ async function digIfPossible(bot, block, label) {
 
 function getFrontPosition(bot) {
     const pos = bot.entity.position.floored()
+
     const yaw = bot.entity.yaw
+    const dir = Math.round(yaw / (Math.PI / 2)) & 3
 
-    const dx = Math.round(-Math.sin(yaw))
-    const dz = Math.round(-Math.cos(yaw))
+    const offsets = [
+        { x: 0, z: -1 }, // south
+        { x: -1, z: 0 }, // west
+        { x: 0, z: 1 }, // north
+        { x: 1, z: 0 } // east
+    ]
 
-    return pos.offset(dx, 0, dz)
-}
-
-function isOutside(bot, startY) {
-    const currentY = bot.entity.position.y
-
-    const pos = bot.entity.position.floored()
-
-    const roof = bot.blockAt(pos.offset(0, 2, 0))
-
-    return (
-        currentY >= startY + 2 &&
-        isAir(roof)
+    return pos.offset(
+        offsets[dir].x,
+        0,
+        offsets[dir].z
     )
 }
+
 
 function isAir(block) {
     return (

@@ -4,7 +4,7 @@ class ManualModeController {
         this.enabled = false
     }
 
-    enable() {
+    async enable() {
         this.enabled = true
         console.log('[ManualMode] Enabled')
     }

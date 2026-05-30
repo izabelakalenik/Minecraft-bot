@@ -11,7 +11,8 @@ class HungerDecisionTree {
                 type: DECISION_TYPES.EAT_FOOD,
                 reason: state.lowHealth
                     ? 'Low health, need regeneration'
-                    : 'Hungry'
+                    : 'Hungry',
+                food: state.bestFood
             }
         }
 

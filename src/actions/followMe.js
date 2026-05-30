@@ -1,7 +1,6 @@
 const moveTo = require('../movement/navigator')
 
-async function followMe(bot, mcData, task) {
-    const username = task.username
+async function followMe(bot, username) {
     const player = bot.players[username]
 
     console.log(`[FollowMe] Present players: ${Object.keys(bot.players)}`)

@@ -1,7 +1,6 @@
-async function unequipItem(bot, mcData, task) {
+async function unequipItem(bot, decision) {
     const slots = ['hand', 'head', 'torso', 'legs', 'feet', 'off-hand']
-
-    if (task.slot === 'all') {
+    if (decision.slot === 'all') {
         for (const slot of slots) {
             try {
                 await bot.unequip(slot)
@@ -14,10 +13,10 @@ async function unequipItem(bot, mcData, task) {
     }
 
     try {
-        await bot.unequip(task.slot)
-        console.log(`[UnequipItem] Unequipped: ${task.slot}`)
+        await bot.unequip(decision.slot)
+        console.log(`[UnequipItem] Unequipped: ${decision.slot}`)
     } catch (err) {
-        console.log(`[UnequipItem] Error unequipping ${task.slot}: ${err.message}`)
+        console.log(`[UnequipItem] Error unequipping ${decision.slot}: ${err.message}`)
     }
 }
 

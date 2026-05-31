@@ -1,6 +1,7 @@
 const ThreatDecisionTree = require('./threatDecisionTree')
 const NightDecisionTree = require('./nightDecisionTree')
 const HungerDecisionTree = require('./hungerDecisionTree')
+const ExploreDecisionTree = require('./exploreDecisionTree')
 const DECISION_TYPES = require('../decisionTypes')
 
 class MainDecisionTree {
@@ -9,6 +10,7 @@ class MainDecisionTree {
             new ThreatDecisionTree(),
             new NightDecisionTree(),
             new HungerDecisionTree(),
+            new ExploreDecisionTree(),
         ]
     }
 

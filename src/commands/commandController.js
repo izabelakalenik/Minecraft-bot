@@ -1,6 +1,6 @@
 const followMe = require('../actions/followMe')
 const printInventory = require('../utils/inventory')
-const getInventory = require("../utils/inventory");
+const {getInventory} = require("../utils/inventory");
 const leaveShelter = require("../actions/leaveShelter");
 const tossItem = require("../actions/tossItem");
 const placeItem = require("../actions/placeItem");

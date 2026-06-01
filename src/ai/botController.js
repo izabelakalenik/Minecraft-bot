@@ -11,6 +11,7 @@ const leaveShelter = require("../actions/leaveShelter");
 const sleep = require("../actions/sleep");
 const placeItem = require("../actions/placeItem");
 const eatFood = require("../actions/eatFood");
+const explore = require('../actions/explore')
 
 class BotController {
     constructor(bot) {
@@ -27,6 +28,15 @@ class BotController {
             [DECISION_TYPES.CONTINUE_SLEEPING]: continueSleeping,
             [DECISION_TYPES.PLACE_BED]: placeItem,
             [DECISION_TYPES.EAT_FOOD]: eatFood,
+            [DECISION_TYPES.EXPLORE]: explore,
+            [DECISION_TYPES.EXPLORE_IDLE]: explore,
+            [DECISION_TYPES.EXPLORE_SEARCH]: explore,
+            [DECISION_TYPES.EXPLORE_MINE]: explore,
+            [DECISION_TYPES.EXPLORE_CRAFT]: explore,
+            [DECISION_TYPES.EXPLORE_PLACE_CRAFTING_TABLE]: explore,
+            [DECISION_TYPES.EXPLORE_PLACE_FURNACE]: explore,
+            [DECISION_TYPES.EXPLORE_SMELT]: explore,
+            [DECISION_TYPES.EXPLORE_STUCK]: explore,
         }
     }
 

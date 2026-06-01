@@ -26,21 +26,28 @@ class CraftingChainResolver {
         this.craftingTablePlaced = false
         
         try {
-            await this.resolve(targetItem)
+            // First pass: check if we need crafting table by doing a dry run
+            console.log('[CraftingChain] Checking if crafting table is needed...')
+            const needsCraftingTable = await this.checkNeedsCraftingTable(targetItem)
             
-            // If crafting table is needed, add it to the chain and mark it
-            if (this.itemsNeedingCraftingTable.size > 0 && !this.craftingTablePlaced) {
-                console.log('[CraftingChain] Adding crafting table to chain as dependency')
+            // If crafting table is needed, resolve it first
+            if (needsCraftingTable) {
+                console.log('[CraftingChain] Crafting table needed - resolving it first')
+                // Start fresh with crafting table
+                this.chain = []
+                this.visited.clear()
                 await this.resolve('crafting_table')
                 this.craftingTablePlaced = true
-                
-                // Now re-analyze items that needed crafting table
-                console.log('[CraftingChain] Re-analyzing items that need crafting table...')
-                for (const item of this.itemsNeedingCraftingTable) {
-                    await this.resolveItemWithCraftingTable(item)
-                }
+                console.log(`[CraftingChain] Crafting table chain resolved (${this.chain.length} steps)`)
             }
             
+            // Now resolve the target item with crafting table available
+            // DON'T clear the chain - append to it!
+            this.visited.clear()
+            this.itemsNeedingCraftingTable.clear()
+            await this.resolve(targetItem)
+            
+            console.log(`[CraftingChain] Final chain: ${this.chain.length} steps`)
             return this.chain
         } catch (err) {
             console.log(`[CraftingChain] Error: ${err.message}`)
@@ -49,14 +56,39 @@ class CraftingChainResolver {
     }
 
     /**
-     * Resolve an item assuming crafting table is available
+     * Check if an item needs crafting table (dry run)
      * @private
      */
-    async resolveItemWithCraftingTable(itemName) {
-        console.log(`[CraftingChain] Re-analyzing ${itemName} with crafting table available`)
-        
-        // This would be called after crafting table is placed in execution
-        // For now, mark that we've handled it
+    async checkNeedsCraftingTable(itemName, visited = new Set()) {
+        if (visited.has(itemName)) return false
+        visited.add(itemName)
+
+        if (this.isOre(itemName)) {
+            // Check if we need a pickaxe upgrade
+            const tierNeeded = getOreMinimumTier(itemName)
+            const currentTier = getCurrentPickaxeTier(this.bot)
+            
+            if (!canMineTier(currentTier, tierNeeded)) {
+                // Need pickaxe - check if pickaxe needs crafting table
+                const nextTier = this.getNextTier(currentTier, tierNeeded)
+                const nextPickaxeName = TIER_TO_PICKAXE[nextTier]
+                return await this.checkNeedsCraftingTable(nextPickaxeName, visited)
+            }
+            return false
+        }
+
+        // Check if recipe is available
+        const mcData = this.bot.registry
+        const item = mcData.itemsByName[itemName]
+        if (!item) return false
+
+        console.log("all recipes", this.bot.recipesAll().map(r => mcData.items[r.result.id]?.name).filter(n => n))
+
+        const recipes = this.bot.recipesFor(item.id, null, 1, null)
+        if (recipes && recipes.length > 0) return false
+
+        // No recipe available - needs crafting table
+        return true
     }
 
     /**

@@ -55,6 +55,8 @@ async function resolveMiningChain(bot, decision = {}) {
 }
 
 async function executeChain(bot, chain) {
+    let craftingTableOpen = false
+    
     for (let i = 0; i < chain.length; i++) {
         const step = chain[i]
         console.log(`\n[ResolveMiningChain] Executing: ${step.action} ${step.item}`)
@@ -62,21 +64,23 @@ async function executeChain(bot, chain) {
         if (step.action === 'MINE') {
             await executeMine(bot, step.item)
         } else if (step.action === 'CRAFT') {
+            // If we're about to craft something that needs crafting table, ensure it's open
+            if (step.reason && step.reason.includes('needs crafting table') && !craftingTableOpen) {
+                // Find and open crafting table
+                console.log('[ResolveMiningChain] Item needs crafting table - placing it...')
+                await placeAndUseCraftingTable(bot)
+                craftingTableOpen = true
+                console.log('[ResolveMiningChain] Crafting table is now open')
+            }
+            
             await executeCraft(bot, step.item, step.reason)
 
+            // If we just crafted the crafting table itself, mark it as open
             if (step.item === 'crafting_table') {
                 console.log('[ResolveMiningChain] Crafting table created - placing it...')
                 await placeAndUseCraftingTable(bot)
-                console.log('[ResolveMiningChain] Crafting table placed - recipes unlocked')
-
-                for (let j = i + 1; j < chain.length; j++) {
-                    if (chain[j].action === 'CRAFT' && chain[j].reason.includes('needs crafting table')) {
-                        console.log(`[ResolveMiningChain] Retrying ${chain[j].item} now that crafting table is available`)
-                        await executeCraft(bot, chain[j].item, chain[j].reason)
-                        chain.splice(j, 1)  // Remove from chain since it's been handled
-                        j--  // Adjust loop index
-                    }
-                }
+                craftingTableOpen = true
+                console.log('[ResolveMiningChain] Crafting table placed and opened')
             }
         }
 
@@ -97,8 +101,35 @@ async function executeMine(bot, oreName) {
     }
 
     try {
-        await mineBlock(bot, {}, { blockName: oreName, amount: 1 })
-        console.log(`[ResolveMiningChain] Mined ${oreName}`)
+        // Use bot.registry directly instead of passing mcData
+        const blockId = bot.registry.blocksByName[oreName]?.id
+
+        if (!blockId) {
+            throw new Error(`Unknown block: ${oreName}`)
+        }
+
+        // Find and mine the block
+        const block = bot.findBlock({
+            matching: blockId,
+            maxDistance: 300
+        })
+
+        if (!block) {
+            throw new Error(`Block ${oreName} not found nearby`)
+        }
+
+        const moveTo = require('../movement/navigator')
+        const target = block.position.offset(1, 0, 0)
+        
+        await moveTo(bot, target, 20000, 2)
+        await bot.lookAt(block.position.offset(0.5, 0.5, 0.5))
+
+        if (bot.canDigBlock(block)) {
+            await bot.dig(block)
+            console.log(`[ResolveMiningChain] Mined ${oreName}`)
+        } else {
+            throw new Error(`Cannot dig ${oreName} - maybe need better tool`)
+        }
     } catch (err) {
         console.log(`[ResolveMiningChain] Failed to mine ${oreName}: ${err.message}`)
         throw err
@@ -181,8 +212,8 @@ async function placeAndUseCraftingTable(bot) {
         await placeItem(bot, { name: 'crafting_table', amount: 1 })
         console.log('[ResolveMiningChain] Placed crafting table')
 
-        // Wait a bit for placement
-        await bot.waitForTicks(10)
+        // Wait for block to be placed
+        await bot.waitForTicks(20)
 
         // Open the crafting table
         const tableBlock = bot.findBlock({
@@ -190,9 +221,22 @@ async function placeAndUseCraftingTable(bot) {
             maxDistance: 5
         })
 
-        if (tableBlock) {
-            await bot.openBlock(tableBlock)
-            console.log('[ResolveMiningChain] Opened crafting table')
+        if (!tableBlock) {
+            throw new Error('Could not find placed crafting table')
+        }
+
+        await bot.openBlock(tableBlock)
+        console.log('[ResolveMiningChain] Opened crafting table - recipes now available')
+        
+        // Wait a bit more to ensure recipes are loaded
+        await bot.waitForTicks(10)
+        
+        // Verify recipes are available
+        const mcData = bot.registry
+        const stonePickaxe = mcData.itemsByName['stone_pickaxe']
+        if (stonePickaxe) {
+            const recipes = bot.recipesFor(stonePickaxe.id, null, 1, null)
+            console.log(`[ResolveMiningChain] Available recipes for stone_pickaxe: ${recipes ? recipes.length : 0}`)
         }
     } catch (err) {
         console.log(`[ResolveMiningChain] Error with crafting table: ${err.message}`)

@@ -1,4 +1,5 @@
 // actions/craftItem.js
+const recipeFactory = require('prismarine-recipe')
 const minecraftData = require('minecraft-data')
 const mineBlock = require('./mineBlock')
 const placeItem = require('./placeItem')
@@ -10,48 +11,63 @@ function normalizeName(name) {
         .replace(/^minecraft:/, '')
 }
 
-function getMcEntryName(mcData, id) {
-    return mcData.items[id]?.name || mcData.blocks[id]?.name || `#${id}`
-}
-
 function resolveEntry(mcData, name) {
     const normalized = normalizeName(name)
     return mcData.itemsByName[normalized] || mcData.blocksByName[normalized] || null
 }
 
-function recipeToString(recipe, mcData) {
-    const resultName = getMcEntryName(mcData, recipe.result.id)
-    const resultCount = recipe.result.count || 1
-
-    const inputs = (recipe.delta || [])
-        .filter(r => r && typeof r.count === 'number' && r.count < 0)
-        .map(r => `${Math.abs(r.count)} x ${getMcEntryName(mcData, r.id)}`)
-
-    return [
-        `${resultCount} x ${resultName}`,
-        `requiresTable=${Boolean(recipe.requiresTable)}`,
-        inputs.length ? `inputs=${inputs.join(', ')}` : 'inputs=none'
-    ].join(' | ')
+function getEntryName(mcData, id) {
+    return mcData.items[id]?.name || mcData.blocks[id]?.name || `#${id}`
 }
 
-function pickRecipe(bot, itemId, craftingTable = null) {
-    let recipes = []
+function getRecipeInputs(recipe) {
+    // Prefer delta because it is what prismarine-recipe documents for ingredient accounting.
+    const deltaInputs = (recipe.delta || []).filter(r => r && typeof r.count === 'number' && r.count < 0)
+    if (deltaInputs.length) return deltaInputs
 
-    try {
-        recipes = bot.recipesFor(itemId, null, 1, craftingTable) || []
-    } catch (err) {
-        recipes = []
+    if (Array.isArray(recipe.ingredients) && recipe.ingredients.length) {
+        return recipe.ingredients.filter(Boolean).map(r => ({
+            id: r.id,
+            count: r.count || 1
+        }))
     }
 
-    if (!recipes.length) {
-        try {
-            recipes = bot.recipesAll(itemId, null, craftingTable) || []
-        } catch (err) {
-            recipes = []
+    if (Array.isArray(recipe.inShape)) {
+        const counts = new Map()
+        for (const row of recipe.inShape) {
+            for (const cell of row) {
+                if (!cell) continue
+                counts.set(cell.id, (counts.get(cell.id) || 0) + (cell.count || 1))
+            }
         }
+        return [...counts.entries()].map(([id, count]) => ({ id, count }))
     }
 
-    return recipes[0] || null
+    return []
+}
+
+function describeRecipe(recipe, mcData) {
+    const resultName = getEntryName(mcData, recipe.result.id)
+    const resultCount = recipe.result.count || 1
+    const inputs = getRecipeInputs(recipe)
+        .map(i => `${Math.abs(i.count)} x ${getEntryName(mcData, i.id)}`)
+        .join(', ')
+
+    return `${resultCount} x ${resultName} | requiresTable=${Boolean(recipe.requiresTable)} | inputs=${inputs || 'none'}`
+}
+
+function pickBestRecipe(recipes) {
+    if (!recipes || recipes.length === 0) return null
+
+    return [...recipes].sort((a, b) => {
+        const aInputs = getRecipeInputs(a).length
+        const bInputs = getRecipeInputs(b).length
+        if (aInputs !== bInputs) return aInputs - bInputs
+
+        const aOut = a.result?.count || 1
+        const bOut = b.result?.count || 1
+        return bOut - aOut
+    })[0]
 }
 
 async function findOrPlaceCraftingTable(bot, mcData, options = {}) {
@@ -91,6 +107,8 @@ async function findOrPlaceCraftingTable(bot, mcData, options = {}) {
 
 async function craftItem(bot, itemName, amount = 1, options = {}, stack = new Set()) {
     const mcData = minecraftData(bot.version)
+    const Recipe = recipeFactory(bot.version).Recipe
+
     const normalized = normalizeName(itemName)
     const entry = resolveEntry(mcData, normalized)
 
@@ -113,61 +131,61 @@ async function craftItem(bot, itemName, amount = 1, options = {}, stack = new Se
     stack.add(normalized)
 
     try {
-        let recipe = pickRecipe(bot, entry.id, null)
-        let craftingTable = null
+        // Use prismarine-recipe for discovery, not Mineflayer's context-sensitive helpers.
+        let recipes = Recipe.find(entry.id, null) || []
 
-        if (!recipe) {
-            craftingTable = await findOrPlaceCraftingTable(bot, mcData, options)
-            recipe = pickRecipe(bot, entry.id, craftingTable)
-        } else if (recipe.requiresTable) {
-            craftingTable = await findOrPlaceCraftingTable(bot, mcData, options)
-            if (!craftingTable) {
-                throw new Error(`[Craft] ${normalized} needs a crafting table, but none is available`)
+        if (!recipes.length) {
+            const block = mcData.blocksByName[normalized]
+            if (block) {
+                console.log(`[Craft] No recipe for ${normalized}; gathering block instead`)
+                bot.chat(`Gathering ${normalized}`)
+                await mineBlock(bot, mcData, {
+                    blockName: normalized,
+                    amount: remainingNeeded
+                })
+                return
             }
-            recipe = pickRecipe(bot, entry.id, craftingTable) || recipe
+
+            throw new Error(`[Craft] No recipe or gather source for ${normalized}`)
         }
 
-        if (recipe) {
-            const resultCount = recipe.result?.count || 1
-            const craftsNeeded = Math.ceil(remainingNeeded / resultCount)
+        let recipe = pickBestRecipe(recipes)
 
-            console.log(`[Craft] Recipe for ${normalized}: ${recipeToString(recipe, mcData)}`)
-            bot.chat(`Recipe: ${recipeToString(recipe, mcData)}`)
+        console.log(`[Craft] Resolved recipe for ${normalized}: ${describeRecipe(recipe, mcData)}`)
+        bot.chat(`Recipe: ${describeRecipe(recipe, mcData)}`)
 
-            const inputs = (recipe.delta || []).filter(r => r && typeof r.count === 'number' && r.count < 0)
+        const craftingTableBlock = await findOrPlaceCraftingTable(bot, mcData, options)
 
-            for (const input of inputs) {
-                const neededAmount = Math.abs(input.count) * craftsNeeded
-                const inputName = getMcEntryName(mcData, input.id)
+        // If the chosen recipe requires a table, make sure one exists.
+        if (recipe.requiresTable && !craftingTableBlock) {
+            console.log(`[Craft] Recipe needs a crafting table, crafting one first...`)
+            bot.chat(`Making a crafting table first...`)
 
-                console.log(`[Craft] Need ${neededAmount} x ${inputName} for ${normalized}`)
-                await craftItem(bot, inputName, neededAmount, options, stack)
+            await craftItem(bot, 'crafting_table', 1, options, stack)
+
+            const placedTable = await findOrPlaceCraftingTable(bot, mcData, options)
+            if (!placedTable) {
+                throw new Error(`[Craft] Crafted a crafting table, but could not place/find it`)
             }
-
-            if (recipe.requiresTable && !craftingTable) {
-                craftingTable = await findOrPlaceCraftingTable(bot, mcData, options)
-            }
-
-            if (recipe.requiresTable && !craftingTable) {
-                throw new Error(`[Craft] Recipe for ${normalized} requires a crafting table`)
-            }
-
-            console.log(`[Craft] Crafting ${craftsNeeded} x ${normalized}`)
-            await bot.craft(recipe, craftsNeeded, craftingTable || null)
-            return
         }
 
-        const block = mcData.blocksByName[normalized]
-        if (block) {
-            console.log(`[Craft] No recipe for ${normalized}; gathering block instead`)
-            await mineBlock(bot, mcData, {
-                blockName: normalized,
-                amount: remainingNeeded
-            })
-            return
+        const table = recipe.requiresTable
+            ? await findOrPlaceCraftingTable(bot, mcData, options)
+            : null
+
+        const resultCount = recipe.result?.count || 1
+        const craftsNeeded = Math.ceil(remainingNeeded / resultCount)
+
+        for (const input of getRecipeInputs(recipe)) {
+            const neededAmount = Math.abs(input.count) * craftsNeeded
+            const inputName = getEntryName(mcData, input.id)
+
+            console.log(`[Craft] Need ${neededAmount} x ${inputName} for ${normalized}`)
+            await craftItem(bot, inputName, neededAmount, options, stack)
         }
 
-        throw new Error(`[Craft] No recipe or gather source for ${normalized}`)
+        console.log(`[Craft] Crafting ${craftsNeeded} x ${normalized}`)
+        await bot.craft(recipe, craftsNeeded, table)
     } finally {
         stack.delete(normalized)
     }

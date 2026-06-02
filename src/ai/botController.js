@@ -54,8 +54,11 @@ class BotController {
         this.isBusy = true
 
         try {
+            this.isBusy = true
             console.log(`[BotController] Execute ${decision.type}`)
             await action(this.bot, decision)
+            await this.bot.waitForTicks(10)
+            this.isBusy = false
         } catch (err) {
             // Fallbacks
             console.log(`[BotController] ${err.message}`)

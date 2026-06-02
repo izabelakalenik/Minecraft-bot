@@ -29,6 +29,8 @@ class ExploreDecisionTree {
     decide(state) {
         const bot = state?.bot
         if (!bot) return null
+        state.lastPlaced = state.lastPlaced || {}
+
 
         const target = this._pickOreTarget(bot, state)
         if (!target) {
@@ -140,8 +142,31 @@ class ExploreDecisionTree {
 
         const tableNearby = findCraftingTable(bot)
 
-        if (itemName !== 'crafting_table' && !tableNearby && !hasEnough(bot, 'crafting_table', 1)) {
-            return this._nextStepToObtainItem(bot, 'crafting_table', state, visited, depth + 1)
+
+        if (!tableNearby) return {
+            type: DECISION_TYPES.EXPLORE_PLACE_CRAFTING_TABLE,
+            name: 'crafting_table',
+            reason: 'Place crafting table',
+        }
+
+
+        if (itemName !== 'crafting_table') {
+            if (!tableNearby && hasEnough(bot, 'crafting_table', 1)) {
+
+                const last = state.lastPlaced.crafting_table || 0
+
+                if (bot.time - last > 200) {
+                    state.lastPlaced.crafting_table = bot.time
+
+                    state.cooldowns.busyUntil = bot.time + 60
+
+                    return {
+                        type: DECISION_TYPES.EXPLORE_PLACE_CRAFTING_TABLE,
+                        name: 'crafting_table',
+                        reason: 'Placing crafting table for crafting chain',
+                    }
+                }
+            }
         }
 
         const itemDef = getItemDef(bot, itemName)
@@ -155,14 +180,20 @@ class ExploreDecisionTree {
 
         const recipes = getRecipeCandidates(bot, itemName, tableNearby)
         if (!recipes.length) {
-            if (itemName !== 'crafting_table' && !tableNearby && !hasEnough(bot, 'crafting_table', 1)) {
-                return this._nextStepToObtainItem(bot, 'crafting_table', state, visited, depth + 1)
-            }
+            if (itemName !== 'crafting_table') {
+            return this._nextStepToObtainItem(
+                bot,
+                'crafting_table',
+                state,
+                visited,
+                depth + 1
+            )
+        }
 
             return {
-                type: DECISION_TYPES.EXPLORE_STUCK,
-                itemName,
-                reason: `No recipe found for ${itemName}`,
+                type: DECISION_TYPES.EXPLORE_SEARCH,
+                targetResource: itemName,
+                reason: `No recipe yet; exploring for resources`,
             }
         }
 

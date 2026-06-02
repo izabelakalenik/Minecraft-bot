@@ -12,7 +12,7 @@ function findCraftingTable(bot) {
 
     return bot.findBlock({
         matching: block => block && block.name === 'crafting_table',
-        maxDistance: 4,
+        maxDistance: 16,
     })
 }
 

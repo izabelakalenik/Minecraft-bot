@@ -103,8 +103,14 @@ function getFirstMissingIngredientName(bot, recipe) {
             .filter(item => item.type === itemId || item.id === itemId)
             .reduce((sum, item) => sum + item.count, 0)
 
+        const name = getItemNameById(bot, itemId)
+
+        if (!name || name === '-1' || itemId < 0) {
+            continue
+        }
+
         if (have < needed) {
-            return getItemNameById(bot, itemId) || String(itemId)
+            return name
         }
     }
 

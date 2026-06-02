@@ -1,34 +1,34 @@
 const ORE_TARGETS = [
-    {
-        name: 'diamond_ore',
-        blocks: ['diamond_ore', 'deepslate_diamond_ore'],
-        requiredTool: 'iron_pickaxe',
-        xpPriority: 100,
-    },
-    {
-        name: 'emerald_ore',
-        blocks: ['emerald_ore', 'deepslate_emerald_ore'],
-        requiredTool: 'iron_pickaxe',
-        xpPriority: 90,
-    },
-    {
-        name: 'ancient_debris',
-        blocks: ['ancient_debris'],
-        requiredTool: 'diamond_pickaxe',
-        xpPriority: 85,
-    },
-    {
-        name: 'redstone_ore',
-        blocks: ['redstone_ore', 'deepslate_redstone_ore'],
-        requiredTool: 'iron_pickaxe',
-        xpPriority: 80,
-    },
-    {
-        name: 'lapis_ore',
-        blocks: ['lapis_ore', 'deepslate_lapis_ore'],
-        requiredTool: 'stone_pickaxe',
-        xpPriority: 70,
-    },
+    // {
+    //     name: 'diamond_ore',
+    //     blocks: ['diamond_ore', 'deepslate_diamond_ore'],
+    //     requiredTool: 'iron_pickaxe',
+    //     xpPriority: 100,
+    // },
+    // {
+    //     name: 'emerald_ore',
+    //     blocks: ['emerald_ore', 'deepslate_emerald_ore'],
+    //     requiredTool: 'iron_pickaxe',
+    //     xpPriority: 90,
+    // },
+    // {
+    //     name: 'ancient_debris',
+    //     blocks: ['ancient_debris'],
+    //     requiredTool: 'diamond_pickaxe',
+    //     xpPriority: 85,
+    // },
+    // {
+    //     name: 'redstone_ore',
+    //     blocks: ['redstone_ore', 'deepslate_redstone_ore'],
+    //     requiredTool: 'iron_pickaxe',
+    //     xpPriority: 80,
+    // },
+    // {
+    //     name: 'lapis_ore',
+    //     blocks: ['lapis_ore', 'deepslate_lapis_ore'],
+    //     requiredTool: 'stone_pickaxe',
+    //     xpPriority: 70,
+    // },
     {
         name: 'gold_ore',
         blocks: ['gold_ore', 'deepslate_gold_ore', 'nether_gold_ore'],

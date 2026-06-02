@@ -5,7 +5,8 @@ const leaveShelter = require("../actions/leaveShelter");
 const tossItem = require("../actions/tossItem");
 const placeItem = require("../actions/placeItem");
 const eatFood = require("../actions/eatFood");
-
+const craftItem = require('../actions/craftItem')
+const digResource = require('../actions/digResource')
 class CommandController {
     constructor(bot, manualModeController, worldState) {
         this.bot = bot
@@ -44,6 +45,14 @@ class CommandController {
 
         if (message === 'eat') {
             return this.eat()
+        }
+
+        if (message.startsWith('craft ')) {
+            return this.craft(message)
+        }
+
+        if (message.startsWith('dig ')) {
+            return this.dig(message)
         }
     }
 
@@ -173,6 +182,54 @@ class CommandController {
             food: food,
             reason: 'Manual command'
         })
+    }
+
+    async craft(message) {
+        await this.manual()
+
+        const parts = message.split(' ')
+        const itemName = parts[1]
+        const amount = parts[2] ? Number(parts[2]) : 1
+
+        if (!itemName) {
+            this.bot.chat('Usage: craft item_name [amount]')
+            return
+        }
+
+        try {
+            console.log(`[Command] Craft ${amount} x ${itemName}`)
+            this.bot.chat(`Crafting ${amount} x ${itemName}`)
+            await craftItem(this.bot, itemName, amount)
+            this.bot.chat(`Crafted ${amount} x ${itemName}`)
+        } catch (err) {
+            console.log(`[Command] Craft failed: ${err.message}`)
+            this.bot.chat(`Craft failed: ${err.message}`)
+        }
+    }
+
+    async dig(message) {
+        await this.manual()
+
+        const parts = message.split(' ')
+        const itemName = parts[1]
+        const amount = parts[2] ? Number(parts[2]) : 1
+
+        if (!itemName) {
+            this.bot.chat('Usage: dig resource_name [amount]')
+            return
+        }
+
+        try {
+            console.log(`[Command] Dig ${amount} x ${itemName}`)
+            this.bot.chat(`Digging ${amount} x ${itemName}`)
+
+            await digResource(this.bot, itemName, amount)
+
+            this.bot.chat(`Dug ${amount} x ${itemName}`)
+        } catch (err) {
+            console.log(`[Command] Dig failed: ${err.message}`)
+            this.bot.chat(`Dig failed: ${err.message}`)
+        }
     }
 }
 

@@ -24,5 +24,3 @@ class HungerDecisionTree {
 }
 
 module.exports = HungerDecisionTree
-
-module.exports = HungerDecisionTree

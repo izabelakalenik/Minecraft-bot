@@ -1,6 +1,6 @@
-// actions/digResource.js
 const minecraftData = require('minecraft-data')
 const moveTo = require('../movement/navigator')
+const craftItem = require('./craftItem')
 
 function normalizeName(name) {
     return String(name || '')
@@ -9,56 +9,165 @@ function normalizeName(name) {
         .replace(/^minecraft:/, '')
 }
 
-function getBestPickaxe(bot, mcData) {
-    const pickaxeNames = [
-        'netherite_pickaxe',
-        'diamond_pickaxe',
-        'iron_pickaxe',
-        'stone_pickaxe',
-        'golden_pickaxe',
-        'wooden_pickaxe'
-    ]
+const PICKAXE_ORDER = [
+    'wooden_pickaxe',
+    'stone_pickaxe',
+    'iron_pickaxe',
+    'diamond_pickaxe',
+    'netherite_pickaxe'
+]
 
-    for (const name of pickaxeNames) {
-        const item = mcData.itemsByName[name]
-        if (item && bot.inventory.count(item.id) > 0) {
-            return item
-        }
-    }
+const PICKAXE_RANK = new Map(PICKAXE_ORDER.map((name, index) => [name, index]))
 
-    return null
-}
+const OWNED_PICKAXE_ORDER = [
+    'netherite_pickaxe',
+    'diamond_pickaxe',
+    'iron_pickaxe',
+    'golden_pickaxe',
+    'stone_pickaxe',
+    'wooden_pickaxe'
+]
 
 function resolveCandidateBlocks(mcData, normalized) {
     const candidates = new Map()
 
-    // Exact block match first.
     const exactBlock = mcData.blocksByName[normalized]
-    if (exactBlock) {
-        candidates.set(exactBlock.id, exactBlock.name)
-    }
+    if (exactBlock) candidates.set(exactBlock.id, exactBlock.name)
 
-    // Common ore variants for resource names like coal, iron, diamond, etc.
-    const likelyOreNames = [
+    for (const name of [
         `${normalized}_ore`,
         `deepslate_${normalized}_ore`,
         `nether_${normalized}_ore`
-    ]
-
-    for (const name of likelyOreNames) {
+    ]) {
         const block = mcData.blocksByName[name]
         if (block) candidates.set(block.id, block.name)
     }
 
-    // Fuzzy fallback: any block ending in _ore and containing the term.
     for (const [name, block] of Object.entries(mcData.blocksByName)) {
-        if (name === normalized) continue
-        if (name.includes(normalized) && name.endsWith('_ore')) {
+        if (name !== normalized && name.includes(normalized) && name.endsWith('_ore')) {
             candidates.set(block.id, block.name)
         }
     }
 
     return [...candidates.keys()]
+}
+
+function getItemByName(mcData, name) {
+    return mcData.itemsByName[name] || null
+}
+
+function findRequiredPickaxeName(block, mcData) {
+    for (const name of PICKAXE_ORDER) {
+        const item = getItemByName(mcData, name)
+        if (item && typeof block.canHarvest === 'function' && block.canHarvest(item.id)) {
+            return name
+        }
+    }
+    return null
+}
+
+function findBestOwnedPickaxeName(block, bot, mcData) {
+    for (const name of OWNED_PICKAXE_ORDER) {
+        const item = getItemByName(mcData, name)
+        if (!item) continue
+
+        const invItem = bot.inventory.items().find(i => i.type === item.id)
+        if (!invItem) continue
+
+        if (typeof block.canHarvest === 'function' && block.canHarvest(item.id)) {
+            return name
+        }
+    }
+    return null
+}
+
+function effectiveDurability(item) {
+    if (!item || typeof item.maxDurability !== 'number') return 0
+    const used = typeof item.durabilityUsed === 'number' ? item.durabilityUsed : 0
+    return Math.max(0, item.maxDurability - used)
+}
+
+async function equipPickaxe(bot, mcData, pickaxeName) {
+    const item = getItemByName(mcData, pickaxeName)
+    if (!item) throw new Error(`[Dig] Unknown pickaxe: ${pickaxeName}`)
+
+    const invItem = bot.inventory.items().find(i => i.type === item.id)
+    if (!invItem) return false
+
+    await bot.equip(invItem, 'hand')
+    return true
+}
+
+function findClosestTargetBlock(bot, candidateBlockIds, maxDistance = 64, count = 20) {
+    const positions = bot.findBlocks({
+        matching: (b) => candidateBlockIds.includes(b.type),
+        maxDistance,
+        count
+    })
+
+    for (const pos of positions) {
+        const block = bot.blockAt(pos)
+        if (block) return block
+    }
+
+    return null
+}
+
+function chooseTravelPickaxe(requiredPickaxeName) {
+    if (!requiredPickaxeName) return null
+
+    if ((PICKAXE_RANK.get(requiredPickaxeName) ?? 0) >= PICKAXE_RANK.get('stone_pickaxe')) {
+        return 'stone_pickaxe'
+    }
+
+    return requiredPickaxeName
+}
+
+async function ensureToolBudget(bot, mcData, targetBlock, targetPos, options = {}, stack = new Set()) {
+    const requiredPickaxe = findRequiredPickaxeName(targetBlock, mcData)
+    if (!requiredPickaxe) return { travelPickaxe: null, reservePickaxe: null }
+
+    const travelPickaxe = chooseTravelPickaxe(requiredPickaxe)
+
+    const safetyMultiplier = options.toolSafetyMultiplier ?? 1.35
+    const buffer = options.toolBuffer ?? 24
+    const estimatedBlocks = Math.ceil(bot.entity.position.distanceTo(targetPos) * safetyMultiplier) + buffer
+
+    const travelItem = getItemByName(mcData, travelPickaxe)
+    if (!travelItem) throw new Error(`[Dig] Missing item data for ${travelPickaxe}`)
+
+    let travelInvItem = bot.inventory.items().find(i => i.type === travelItem.id)
+    let travelDurability = effectiveDurability(travelInvItem)
+
+    if (travelDurability <= 0) {
+        console.log(`[Dig] Crafting one ${travelPickaxe} to measure/ensure travel tool`)
+        await craftItem(bot, travelPickaxe, 1, options, stack)
+        travelInvItem = bot.inventory.items().find(i => i.type === travelItem.id)
+        travelDurability = effectiveDurability(travelInvItem)
+    }
+
+    const perTool = Math.max(1, travelDurability || travelItem.maxDurability || 1)
+    const wantedTravelTools = Math.max(1, Math.ceil(estimatedBlocks / perTool))
+
+    const currentTravelTools = bot.inventory.count(travelItem.id)
+    if (currentTravelTools < wantedTravelTools) {
+        const missing = wantedTravelTools - currentTravelTools
+        console.log(`[Dig] Pre-crafting ${missing} extra ${travelPickaxe}(s) for travel`)
+        await craftItem(bot, travelPickaxe, wantedTravelTools, options, stack)
+    }
+
+    if (requiredPickaxe !== travelPickaxe) {
+        const reserveItem = getItemByName(mcData, requiredPickaxe)
+        if (!reserveItem) throw new Error(`[Dig] Missing item data for ${requiredPickaxe}`)
+
+        if (bot.inventory.count(reserveItem.id) < 1) {
+            console.log(`[Dig] Crafting reserved ${requiredPickaxe} for the target block`)
+            await craftItem(bot, requiredPickaxe, 1, options, stack)
+        }
+    }
+
+    await equipPickaxe(bot, mcData, travelPickaxe)
+    return { travelPickaxe, reservePickaxe: requiredPickaxe }
 }
 
 async function digResource(bot, targetName, amount = 1, options = {}) {
@@ -79,23 +188,6 @@ async function digResource(bot, targetName, amount = 1, options = {}) {
 
     bot.chat(`Digging ${amount} x ${normalized}`)
 
-    const equipIfPossible = async () => {
-        const pickaxe = getBestPickaxe(bot, mcData)
-        if (!pickaxe) return false
-
-        try {
-            const item = bot.inventory.items().find(i => i.type === pickaxe.id)
-            if (!item) return false
-            await bot.equip(item, 'hand')
-            return true
-        } catch (err) {
-            console.log(`[Dig] Could not equip pickaxe: ${err.message}`)
-            return false
-        }
-    }
-
-    await equipIfPossible()
-
     while (attempts < maxAttempts) {
         const have = targetItemId ? bot.inventory.count(targetItemId) : 0
         if (targetItemId && have >= amount) {
@@ -103,8 +195,13 @@ async function digResource(bot, targetName, amount = 1, options = {}) {
             return
         }
 
+        const preflightBlock = findClosestTargetBlock(bot, candidateBlockIds, searchDistance, 20)
+        if (preflightBlock) {
+            await ensureToolBudget(bot, mcData, preflightBlock, preflightBlock.position, options)
+        }
+
         const block = bot.findBlock({
-            matching: (b) => candidateBlockIds.includes(b.type),
+            matching: candidateBlockIds,
             maxDistance: searchDistance
         })
 
@@ -127,16 +224,28 @@ async function digResource(bot, targetName, amount = 1, options = {}) {
             const targetPos = block.position.offset(1, 0, 0)
             await moveTo(bot, targetPos, 20000, 2)
 
-            if (!bot.canDigBlock(block)) {
-                console.log(`[Dig] Cannot dig ${block.name} at ${block.position}`)
+            const liveBlock = bot.blockAt(block.position) || block
+            if (!bot.canDigBlock(liveBlock)) {
+                console.log(`[Dig] Cannot dig ${liveBlock.name} at ${liveBlock.position}`)
                 attempts++
                 continue
             }
 
-            await bot.lookAt(block.position.offset(0.5, 0.5, 0.5))
+            const requiredPickaxe = findRequiredPickaxeName(liveBlock, mcData)
+            const travelPickaxe = chooseTravelPickaxe(requiredPickaxe)
 
-            await equipIfPossible()
-            await bot.dig(block)
+            if (requiredPickaxe && requiredPickaxe !== travelPickaxe) {
+                const reserveItem = getItemByName(mcData, requiredPickaxe)
+                const reserveInv = reserveItem && bot.inventory.items().find(i => i.type === reserveItem.id)
+                if (reserveInv) {
+                    await bot.equip(reserveInv, 'hand')
+                }
+            } else if (travelPickaxe) {
+                await equipPickaxe(bot, mcData, travelPickaxe)
+            }
+
+            await bot.lookAt(liveBlock.position.offset(0.5, 0.5, 0.5))
+            await bot.dig(liveBlock)
 
             await bot.waitForTicks(10)
 

@@ -12,6 +12,9 @@ const sleep = require("../actions/sleep");
 const placeItem = require("../actions/placeItem");
 const eatFood = require("../actions/eatFood");
 const findFood = require("../actions/findFood");
+const cookMeat = require("../actions/cookMeat");
+const craftFurnace = require("../actions/craftFurnace");
+const craftFood = require("../actions/craftFood");
 const explore = require('../actions/explore')
 
 class BotController {
@@ -30,6 +33,9 @@ class BotController {
             [DECISION_TYPES.PLACE_BED]: placeItem,
             [DECISION_TYPES.EAT_FOOD]: eatFood,
             [DECISION_TYPES.FIND_FOOD]: findFood,
+            [DECISION_TYPES.COOK_MEAT]: cookMeat,
+            [DECISION_TYPES.CRAFT_FURNACE]: craftFurnace,
+            [DECISION_TYPES.CRAFT_FOOD]: craftFood,
             [DECISION_TYPES.EXPLORE]: explore,
             // add craft bed
         }

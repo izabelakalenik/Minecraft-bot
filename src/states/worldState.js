@@ -3,6 +3,7 @@ const BotState = require('./BotState')
 const TimeState = require('./TimeState')
 const ThreatState = require('./ThreatState')
 const EnvironmentState = require('./EnvironmentState')
+const FoodSourceState = require('./FoodSourceState')
 
 class WorldState {
     constructor(bot) {
@@ -13,7 +14,8 @@ class WorldState {
             new BotState(bot),
             new TimeState(bot),
             new ThreatState(bot),
-            new EnvironmentState(bot)
+            new EnvironmentState(bot),
+            new FoodSourceState(bot)
         ]
 
         this.update()

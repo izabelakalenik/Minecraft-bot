@@ -11,8 +11,6 @@ class InventoryState {
     }
 
     update() {
-        const woolCount = this.countItemsByPattern('wool')
-        const plankCount = this.countItemsByPattern('planks')
         const cobblestoneCount = this.countItemsByName('cobblestone')
         const bestFood = this.getBestFood()
         const rawMeat = this.getRawMeat()
@@ -27,10 +25,10 @@ class InventoryState {
             craftableFoodNeedsTable: craftableFood ? craftableFood.requiresTable : false,
             craftableFoodAmount: craftableFood ? craftableFood.amount : 0,
             hasFurnaceResources: cobblestoneCount >= FURNACE_COBBLESTONE_COST,
-            hasBedResources: woolCount >= 3 && plankCount >= 3,
+            craftableBed: this.getCraftableBed(),
             bedInInventory:
                 this.bot.inventory.items().find(item =>
-                    item.name.includes('bed')
+                    item.name.endsWith('_bed')
                 ) || null,
             furnaceInInventory:
                 this.bot.inventory.items().find(item =>
@@ -71,6 +69,22 @@ class InventoryState {
             requiresTable: food.requiresTable,
             amount: maxCraftableAmount(food, counts)
         }
+    }
+
+    getCraftableBed() {
+        if (this.countItemsByPattern('planks') < 3) return null
+
+        const woolCounts = {}
+        for (const item of this.bot.inventory.items()) {
+            if (item.name.endsWith('_wool')) {
+                woolCounts[item.name] = (woolCounts[item.name] || 0) + item.count
+            }
+        }
+
+        const woolName = Object.keys(woolCounts).find(name => woolCounts[name] >= 3)
+        if (!woolName) return null
+
+        return woolName.replace('_wool', '_bed')
     }
 
     countItemsByPattern(pattern) {

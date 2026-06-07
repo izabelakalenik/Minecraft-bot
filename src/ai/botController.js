@@ -29,6 +29,7 @@ class BotController {
             [DECISION_TYPES.LEAVE_SHELTER]: leaveShelter,
             [DECISION_TYPES.SLEEP]: sleep,
             [DECISION_TYPES.CONTINUE_SLEEPING]: continueSleeping,
+            [DECISION_TYPES.CRAFT_BED]: (bot, decision) => craftItem(bot, decision.item, decision.amount || 1),
             [DECISION_TYPES.PLACE_BED]: placeItem,
             [DECISION_TYPES.EAT_FOOD]: eatFood,
             [DECISION_TYPES.FIND_FOOD]: findFood,
@@ -37,7 +38,6 @@ class BotController {
             [DECISION_TYPES.PLACE_FURNACE]: placeItem,
             [DECISION_TYPES.CRAFT_FOOD]: (bot, decision) => craftItem(bot, decision.food, decision.amount || 1),
             [DECISION_TYPES.EXPLORE]: explore,
-            // add craft bed
         }
     }
 

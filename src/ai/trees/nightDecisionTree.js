@@ -37,9 +37,11 @@ class NightDecisionTree {
             }
         }
 
-        if (state.hasBedResources) {
+        if (state.craftableBed) {
             return {
-                type: DECISION_TYPES.CRAFT_BED
+                type: DECISION_TYPES.CRAFT_BED,
+                item: state.craftableBed,
+                amount: 1
             }
         }
 

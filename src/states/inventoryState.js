@@ -1,6 +1,6 @@
 const minecraftData = require('minecraft-data')
 const { isRawMeat, FUEL_ITEMS } = require('../utils/meat')
-const { findCraftableFood } = require('../utils/food')
+const { findCraftableFood, maxCraftableAmount } = require('../utils/food')
 
 const FURNACE_COBBLESTONE_COST = 8
 
@@ -25,11 +25,16 @@ class InventoryState {
             hasFuel: this.hasFuel(),
             craftableFood: craftableFood ? craftableFood.name : null,
             craftableFoodNeedsTable: craftableFood ? craftableFood.requiresTable : false,
+            craftableFoodAmount: craftableFood ? craftableFood.amount : 0,
             hasFurnaceResources: cobblestoneCount >= FURNACE_COBBLESTONE_COST,
             hasBedResources: woolCount >= 3 && plankCount >= 3,
             bedInInventory:
                 this.bot.inventory.items().find(item =>
                     item.name.includes('bed')
+                ) || null,
+            furnaceInInventory:
+                this.bot.inventory.items().find(item =>
+                    item.name === 'furnace'
                 ) || null
         }
     }
@@ -57,7 +62,15 @@ class InventoryState {
         for (const item of this.bot.inventory.items()) {
             counts[item.name] = (counts[item.name] || 0) + item.count
         }
-        return findCraftableFood(counts)
+
+        const food = findCraftableFood(counts)
+        if (!food) return null
+
+        return {
+            name: food.name,
+            requiresTable: food.requiresTable,
+            amount: maxCraftableAmount(food, counts)
+        }
     }
 
     countItemsByPattern(pattern) {

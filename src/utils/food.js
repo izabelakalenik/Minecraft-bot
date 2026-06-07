@@ -18,7 +18,17 @@ function findCraftableFood(counts) {
     return null
 }
 
+// how many portions the current ingredients allow (limited by the scarcest ingredient)
+function maxCraftableAmount(food, counts) {
+    return Math.min(
+        ...Object.entries(food.ingredients).map(
+            ([name, need]) => Math.floor((counts[name] || 0) / need)
+        )
+    )
+}
+
 module.exports = {
     CRAFTABLE_FOODS,
-    findCraftableFood
+    findCraftableFood,
+    maxCraftableAmount
 }

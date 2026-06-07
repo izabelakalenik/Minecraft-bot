@@ -39,7 +39,8 @@ class HungerDecisionTree {
             return {
                 type: DECISION_TYPES.CRAFT_FOOD,
                 food,
-                reason: `${reason}: crafting ${food} from ingredients`
+                amount: state.craftableFoodAmount,
+                reason: `${reason}: crafting ${state.craftableFoodAmount} x ${food} from ingredients`
             }
         }
 
@@ -63,16 +64,25 @@ class HungerDecisionTree {
         return {
             type: DECISION_TYPES.CRAFT_FOOD,
             food,
+            amount: state.craftableFoodAmount,
             reason: tableNearby
-                ? `${reason}: crafting ${food} at nearby table`
-                : `${reason}: crafting a table to make ${food}`
+                ? `${reason}: crafting ${state.craftableFoodAmount} x ${food} at nearby table`
+                : `${reason}: crafting a table to make ${state.craftableFoodAmount} x ${food}`
         }
     }
 
     cookMeatDecision(state, reason) {
         const meat = state.rawMeat
 
-        if (state.nearbyFurnace && state.hasFuel) {
+        if (!state.hasFuel) {
+            return {
+                type: DECISION_TYPES.EAT_FOOD,
+                food: meat,
+                reason: `${reason}: no fuel to cook, eating raw ${meat.name}`
+            }
+        }
+
+        if (state.nearbyFurnace) {
             return {
                 type: DECISION_TYPES.COOK_MEAT,
                 furnace: state.nearbyFurnace,
@@ -81,11 +91,21 @@ class HungerDecisionTree {
             }
         }
 
-        if (state.hasFurnaceResources && state.hasFuel) {
+        if (state.furnaceInInventory) {
+            return {
+                type: DECISION_TYPES.PLACE_FURNACE,
+                name: 'furnace',
+                amount: 1,
+                reason: `${reason}: placing furnace from inventory to cook ${meat.name}`
+            }
+        }
+
+        if (state.hasFurnaceResources) {
             return {
                 type: DECISION_TYPES.CRAFT_FURNACE,
-                meat,
-                reason: `${reason}: no furnace nearby, crafting one to cook ${meat.name}`
+                item: 'furnace',
+                amount: 1,
+                reason: `${reason}: no furnace, crafting one to cook ${meat.name}`
             }
         }
 

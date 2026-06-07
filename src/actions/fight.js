@@ -13,12 +13,14 @@ async function fight(bot, decision) {
 
     console.log(`[Fight] Fighting ${target.name}`)
 
+    const isPassivePrey = target.type === 'animal' || target.kind === 'Passive mobs'
+
     await equipBestWeapon(bot)
 
     const startTime = Date.now()
 
     while (target.isValid) {
-        if (bot.health <= LOW_HEALTH_LEVEL) {
+        if (!isPassivePrey && bot.health <= LOW_HEALTH_LEVEL) {
             console.log('[Fight] Low health, stopping fight')
             return
         }

@@ -102,8 +102,9 @@ class CommandController {
         const state = this.worldState.getPrintableState()
 
         const message =
-            `HP: ${state.health} | ` +
-            `Food: ${state.food} | ` +
+            `Mode: ${this.manualModeController.enabled ? 'Manual' : 'Auto'} | ` +
+            `HP: ${Number(state.health).toFixed(1)}/20 | ` +
+            `Food: ${Number(state.food).toFixed(1)}/20 | ` +
             `Night: ${state.isNight} | ` +
             `Threat: ${state.threat ?? 'none'} | ` +
             `Sheltered: ${state.isSheltered} | ` +

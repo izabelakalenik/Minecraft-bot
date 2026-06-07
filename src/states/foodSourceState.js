@@ -1,4 +1,4 @@
-const FOOD_SEARCH_DISTANCE = 32
+const FOOD_SEARCH_DISTANCE = 64
 
 const EDIBLE_CROPS = [
     'carrots',

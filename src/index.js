@@ -63,6 +63,8 @@ bot.once('spawn', () => {
 
         const botController = new BotController(bot)
         const manualModeController = new ManualModeController(bot)
+        
+        bot.manualMode = manualModeController
         const commandController = new CommandController(
             bot,
             manualModeController,

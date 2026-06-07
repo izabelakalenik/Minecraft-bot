@@ -9,6 +9,10 @@ async function moveTo(bot, position, timeout = 15000, range = 2) {
         throw new Error('[Navigator] Invalid position')
     }
 
+    if (bot.manualMode?.isEnabled() && bot._aiActionActive) {
+        throw new Error('[Navigator] Manual mode active - AI navigation blocked')
+    }
+
     return new Promise((resolve, reject) => {
         const distance = bot.entity?.position?.distanceTo(position) || 0
         const distanceTimeout = Math.ceil(distance * 1000) + 10000
@@ -26,6 +30,13 @@ async function moveTo(bot, position, timeout = 15000, range = 2) {
             clearTimeout(timer)
             bot.removeListener('goal_reached', onGoalReached)
             bot.removeListener('path_update', onPathUpdate)
+            bot.removeListener('forceStop', onForceStop)
+        }
+
+        function onForceStop() {
+            cleanup()
+            console.log('[Navigator] Navigation stopped')
+            reject(new Error('[Navigator] Navigation stopped'))
         }
 
         function onGoalReached() {
@@ -55,6 +66,7 @@ async function moveTo(bot, position, timeout = 15000, range = 2) {
         console.log(`[Navigator] Looking for target at (${Math.floor(position.x)}, ${Math.floor(position.y)}, ${Math.floor(position.z)}) [distance: ${distance.toFixed(1)}, timeout: ${effectiveTimeout}ms]`)
         bot.on('goal_reached', onGoalReached)
         bot.on('path_update', onPathUpdate)
+        bot.once('forceStop', onForceStop)
         bot.pathfinder.setGoal(goal)
     })
 }

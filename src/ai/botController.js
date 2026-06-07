@@ -53,6 +53,7 @@ class BotController {
         }
 
         this.isBusy = true
+        this.bot._aiActionActive = true
 
         try {
             console.log(`[BotController] Execute ${decision.type}`)
@@ -69,6 +70,7 @@ class BotController {
             }
         } finally {
             this.isBusy = false
+            this.bot._aiActionActive = false
         }
     }
 }

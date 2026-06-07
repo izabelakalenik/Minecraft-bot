@@ -81,6 +81,12 @@ bot.once('spawn', () => {
 
             const decision = decisionTree.decide(worldState)
 
+            // an action is running: interrupt it only if this is more important
+            if (botController.isBusy) {
+                botController.maybePreempt(decision)
+                return
+            }
+
             console.log('[Main] Decided on:', decision)
 
             await botController.execute(decision)

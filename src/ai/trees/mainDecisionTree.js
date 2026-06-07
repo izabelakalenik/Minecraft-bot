@@ -15,15 +15,17 @@ class MainDecisionTree {
     }
 
     decide(state) {
-        for (const tree of this.trees) {
-            const decision = tree.decide(state)
+        // priority = tree index (lower = more important)
+        for (let i = 0; i < this.trees.length; i++) {
+            const decision = this.trees[i].decide(state)
 
             if (decision) {
+                decision.priority = i
                 return decision
             }
         }
 
-        return { type: DECISION_TYPES.EXPLORE}
+        return { type: DECISION_TYPES.EXPLORE, priority: this.trees.length - 1 }
     }
 }
 

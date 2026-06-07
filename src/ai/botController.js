@@ -20,6 +20,7 @@ class BotController {
     constructor(bot) {
         this.bot = bot
         this.isBusy = false
+        this.currentPriority = Infinity
 
         this.actionMap = {
             [DECISION_TYPES.FIGHT]: fight,
@@ -53,7 +54,9 @@ class BotController {
         }
 
         this.isBusy = true
+        this.currentPriority = decision.priority ?? Infinity
         this.bot._aiActionActive = true
+        this.bot._aiAbort = false
 
         try {
             console.log(`[BotController] Execute ${decision.type}`)
@@ -70,7 +73,21 @@ class BotController {
             }
         } finally {
             this.isBusy = false
+            this.currentPriority = Infinity
             this.bot._aiActionActive = false
+            this.bot._aiAbort = false
+        }
+    }
+
+    // interrupt the running action when a higher-priority decision appears
+    maybePreempt(decision) {
+        if (!this.isBusy || !decision) return
+
+        const newPriority = decision.priority ?? Infinity
+        if (newPriority < this.currentPriority) {
+            console.log(`[BotController] Action ${decision.type} has higher priority (${newPriority}) than current action (${this.currentPriority})`)
+            this.bot._aiAbort = true
+            this.bot.emit('forceStop')
         }
     }
 }

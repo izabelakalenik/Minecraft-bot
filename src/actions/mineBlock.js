@@ -17,6 +17,11 @@ async function mineBlock(bot, mcData, task) {
     let attempts = 0
 
     while (collected < amountNeeded && attempts < 50) {
+        if (bot._aiAbort) {
+            console.log('[MineBlock] Aborted for a higher-priority action')
+            return
+        }
+
         const itemId = mcData.itemsByName[blockName]?.id
         const count = itemId ? bot.inventory.count(itemId) : 0
 

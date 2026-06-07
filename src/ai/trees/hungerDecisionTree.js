@@ -1,4 +1,5 @@
 const DECISION_TYPES = require('../decisionTypes')
+const { isRawMeat } = require('../../utils/meat')
 
 class HungerDecisionTree {
     decide(state) {
@@ -10,17 +11,18 @@ class HungerDecisionTree {
             ? 'Low health, need regeneration'
             : 'Hungry'
 
-        // cooked meat restores more hunger
-        if (state.hasRawMeat) {
-            return this.cookMeatDecision(state, reason)
-        }
-
-        if (state.hasFood) {
+        // already have ready-to-eat food: eat it instead of foraging or cooking
+        if (state.hasFood && !isRawMeat(state.bestFood.name)) {
             return {
                 type: DECISION_TYPES.EAT_FOOD,
                 reason,
                 food: state.bestFood
             }
+        }
+
+        // best food on hand is raw meat: cook it (more hunger restored, avoids food poisoning)
+        if (state.hasRawMeat) {
+            return this.cookMeatDecision(state, reason)
         }
 
         if (state.craftableFood) {
@@ -70,7 +72,7 @@ class HungerDecisionTree {
     cookMeatDecision(state, reason) {
         const meat = state.rawMeat
 
-        if (state.nearbyFurnace) {
+        if (state.nearbyFurnace && state.hasFuel) {
             return {
                 type: DECISION_TYPES.COOK_MEAT,
                 furnace: state.nearbyFurnace,

@@ -1,7 +1,5 @@
 const moveTo = require('../movement/navigator')
 const fight = require('./fight')
-const eatFood = require('./eatFood')
-const InventoryState = require('../states/inventoryState')
 
 const PICKUP_RADIUS = 8
 const SEARCH_TIMEOUT = 12000
@@ -18,8 +16,6 @@ async function findFood(bot, decision) {
         default:
             await searchForFood(bot)
     }
-
-    await eatBestFood(bot, decision.reason)
 }
 
 async function huntAnimal(bot, decision) {
@@ -97,17 +93,6 @@ async function collectNearbyDrops(bot) {
             break
         }
     }
-}
-
-async function eatBestFood(bot, reason) {
-    const bestFood = new InventoryState(bot).getBestFood()
-
-    if (!bestFood) {
-        console.log('[FindFood] Still no edible food after searching')
-        return
-    }
-
-    await eatFood(bot, { food: bestFood, reason })
 }
 
 module.exports = findFood

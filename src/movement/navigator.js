@@ -4,7 +4,8 @@ async function moveTo(bot, position, timeout = 15000, range = 2) {
     if (!bot.pathfinder) {
         throw new Error('[Navigator] Pathfinder not loaded')
     }
-    if (!position || typeof position.x !== 'number' || typeof position.y !== 'number' || typeof position.z !== 'number') {
+    // Number.isFinite rejects NaN/Infinity; typeof NaN === 'number' would slip past a typeof check
+    if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y) || !Number.isFinite(position.z)) {
         throw new Error('[Navigator] Invalid position')
     }
 

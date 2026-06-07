@@ -1,7 +1,6 @@
 const minecraftData = require('minecraft-data')
 const moveTo = require('../movement/navigator')
-const eatFood = require('./eatFood')
-const { FUEL_ITEMS, cookedNameFor } = require('../utils/meat')
+const { FUEL_ITEMS } = require('../utils/meat')
 
 const FURNACE_REACH = 3
 const SMELT_TIMEOUT = 30_000
@@ -27,27 +26,24 @@ async function cookMeat(bot, decision) {
         return
     }
 
-    const fuel = findFuel(bot, mcData)
-    if (!fuel) {
-        console.log('[CookMeat] No fuel available, eating raw meat instead')
-        await eatFood(bot, { food: meat, reason: decision.reason })
-        return
-    }
-
     await moveTo(bot, furnaceBlock.position, 20000, FURNACE_REACH)
 
     let furnace
     try {
         furnace = await bot.openFurnace(furnaceBlock)
     } catch (err) {
-        console.log(`[CookMeat] Cannot open furnace: ${err.message}. Eating raw meat`)
-        await eatFood(bot, { food: meat, reason: decision.reason })
+        console.log(`[CookMeat] Cannot open furnace: ${err.message}`)
         return
     }
 
     try {
         const meatType = mcData.itemsByName[meat.name]
         const count = bot.inventory.count(meatType.id)
+
+        const fuel = findFuel(bot, mcData)
+        if (!fuel) {
+            throw new Error('no fuel in inventory')
+        }
 
         await furnace.putFuel(fuel.id, null, 1)
         await furnace.putInput(meatType.id, null, count)
@@ -66,14 +62,6 @@ async function cookMeat(bot, decision) {
         console.log(`[CookMeat] Smelting error: ${err.message}`)
     } finally {
         furnace.close()
-    }
-
-    const cookedName = cookedNameFor(meat.name)
-    const cooked = bot.inventory.items().find(i => i.name === cookedName)
-    const toEat = cooked || bot.inventory.items().find(i => i.name === meat.name)
-
-    if (toEat) {
-        await eatFood(bot, { food: toEat, reason: decision.reason })
     }
 }
 

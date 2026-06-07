@@ -14,6 +14,8 @@ function setupPathfinder(bot) {
 
     bot.pathfinder.setMovements(defaultMove)
 
+    bot.pathfinder.thinkTimeout = 20000
+
     return mcData
 }
 

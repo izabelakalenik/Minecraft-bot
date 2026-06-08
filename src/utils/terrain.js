@@ -1,5 +1,5 @@
-// terrain detection for the obstacle / bridge decision logic.
-// Minecraft forward vector: x = -sin(yaw), z = cos(yaw)
+// terrain detection for the obstacle / bridge decision logic
+// minecraft forward vector: x = -sin(yaw), z = cos(yaw)
 
 const { Vec3 } = require('vec3')
 

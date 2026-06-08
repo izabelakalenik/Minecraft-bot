@@ -1,5 +1,6 @@
 const DECISION_TYPES = require('../decisionTypes')
 const minecraftData = require('minecraft-data')
+const { findBridgeBlock } = require('../../utils/terrain')
 
 class ExploreDecisionTree {
     decide(state) {
@@ -8,6 +9,23 @@ class ExploreDecisionTree {
         if (state.lowHealth || state.threat) return null
 
         const bot = state.bot
+
+        if (bot._blockedRoute) {
+            const { obstacle, target } = bot._blockedRoute
+            bot._blockedRoute = null
+
+            // lava / gap -> bridge (water is left to the pathfinder, which swims across)
+            if (obstacle !== 'water' && findBridgeBlock(bot)) {
+                return {
+                    type: DECISION_TYPES.BUILD_BRIDGE,
+                    target,
+                    length: 6,
+                    reason: `Blocked by ${obstacle} toward target, building a bridge`
+                }
+            }
+            // water, or no blocks to bridge: fall through and explore elsewhere
+        }
+
         const mcData = minecraftData(bot.version)
 
         const RESOURCES = [

@@ -1,6 +1,7 @@
 const minecraftData = require('minecraft-data')
 const moveTo = require('../movement/navigator')
 const craftItem = require('./craftItem')
+const { blockingObstacleToward } = require('../utils/terrain')
 
 function normalizeName(name) {
     return String(name || '')
@@ -269,6 +270,18 @@ async function digResource(bot, targetName, amount = 1, options = {}) {
             }
         } catch (err) {
             console.log(`[Dig] Error: ${err.message}`)
+
+            if (/no ?path/i.test(err.message) && !bot.manualMode?.isEnabled()) {
+                const obstacle = blockingObstacleToward(bot, block.position)
+                if (obstacle) {
+                    bot._blockedRoute = {
+                        obstacle,
+                        target: { x: block.position.x, y: block.position.y, z: block.position.z }
+                    }
+                    console.log(`[Dig] Blocked by ${obstacle} - deferring crossing to the decision tree`)
+                    return
+                }
+            }
         }
 
         attempts++

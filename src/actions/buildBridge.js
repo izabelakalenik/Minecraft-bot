@@ -7,6 +7,12 @@ async function buildBridge(bot, decision) {
     console.log(`[BuildBridge] ${decision.reason}`)
 
     const length = decision.length || 5
+
+    if (decision.target) {
+        const t = decision.target
+        await bot.lookAt(new Vec3(t.x, bot.entity.position.y, t.z), true)
+    }
+
     const { x: dx, z: dz } = forwardCardinal(bot)
     const face = new Vec3(dx, 0, dz)
 

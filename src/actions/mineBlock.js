@@ -1,4 +1,5 @@
 const moveTo = require('../movement/navigator')
+const { blockingObstacleToward } = require('../utils/terrain')
 
 async function mineBlock(bot, mcData, task) {
     const blockName = task.blockName
@@ -15,6 +16,7 @@ async function mineBlock(bot, mcData, task) {
 
     let collected = 0
     let attempts = 0
+    let noPathCount = 0
 
     while (collected < amountNeeded && attempts < 50) {
         if (bot._aiAbort) {
@@ -54,12 +56,13 @@ async function mineBlock(bot, mcData, task) {
         try {
             const target = block.position.offset(1, 0, 0)
             console.log(`[MineBlock] Moving to block at ${block.position.x}, ${block.position.y}, ${block.position.z}`)
-            
+
             await moveTo(bot, target, 20000, 2)
+            noPathCount = 0
             console.log(`[MineBlock] At block, digging...`)
-            
+
             await bot.lookAt(block.position.offset(0.5, 0.5, 0.5))
-            
+
             if (bot.canDigBlock(block)) {
                 await bot.dig(block)
                 collected++
@@ -67,12 +70,30 @@ async function mineBlock(bot, mcData, task) {
             } else {
                 console.log(`[MineBlock] Cannot dig block`)
             }
-            
+
             await bot.waitForTicks(15)
         } catch (err) {
             console.log(`[MineBlock] Error: ${err.message}`)
+
+            if (/no ?path/i.test(err.message)) {
+                const obstacle = blockingObstacleToward(bot, block.position)
+                if (obstacle && !bot.manualMode?.isEnabled()) {
+                    bot._blockedRoute = {
+                        obstacle,
+                        target: { x: block.position.x, y: block.position.y, z: block.position.z }
+                    }
+                    console.log(`[MineBlock] Blocked by ${obstacle} - deferring crossing to the decision tree`)
+                    break
+                }
+
+                noPathCount++
+                if (noPathCount >= 3) {
+                    console.log('[MineBlock] Target unreachable, giving up')
+                    break
+                }
+            }
         }
-        
+
         attempts++
     }
 

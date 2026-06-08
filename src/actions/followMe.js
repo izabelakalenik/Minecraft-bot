@@ -1,4 +1,6 @@
 const moveTo = require('../movement/navigator')
+const buildBridge = require('./buildBridge')
+const { blockingObstacleToward, findBridgeBlock } = require('../utils/terrain')
 
 async function followMe(bot, username) {
     const player = bot.players[username]
@@ -41,6 +43,26 @@ async function followMe(bot, username) {
             await moveTo(bot, currentTargetPosition, 45000, 3)
         } catch (err) {
             console.log(`[FollowMe] Follow attempt failed: ${err.message}`)
+
+            if (/no ?path/i.test(err.message)) {
+                const obstacle = blockingObstacleToward(bot, currentTargetPosition)
+                if (obstacle && obstacle !== 'water' && findBridgeBlock(bot)) {
+                    console.log(`[FollowMe] Blocked by ${obstacle}, bridging toward ${username}`)
+                    await buildBridge(bot, {
+                        target: {
+                            x: currentTargetPosition.x,
+                            y: currentTargetPosition.y,
+                            z: currentTargetPosition.z
+                        },
+                        length: 6,
+                        reason: `bridging toward ${username}`
+                    })
+                    await bot.waitForTicks(10)
+                    attempts -= 1
+                    continue
+                }
+            }
+
             break
         }
 

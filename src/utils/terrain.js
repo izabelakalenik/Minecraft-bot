@@ -63,32 +63,7 @@ function crossingTarget(bot, names, maxScan = 64) {
     return base.offset(dx * i, 0, dz * i)
 }
 
-// is there a safe sideways detour?
-function hasAlternateRoute(bot) {
-    const { x: dx, z: dz } = forwardCardinal(bot)
-    const base = bot.entity.position.floored()
-
-    // the two directions perpendicular to facing
-    const sides = [
-        { x: -dz, z: dx },
-        { x: dz, z: -dx }
-    ]
-
-    for (const s of sides) {
-        const floor = bot.blockAt(base.offset(s.x, -1, s.z))
-        const feet = bot.blockAt(base.offset(s.x, 0, s.z))
-        const head = bot.blockAt(base.offset(s.x, 1, s.z))
-
-        const solidFloor = floor && floor.boundingBox === 'block' &&
-            floor.name !== 'lava' && floor.name !== 'water'
-        const clear = feet && head && feet.name === 'air' && head.name === 'air'
-
-        if (solidFloor && clear) return true
-    }
-    return false
-}
-
-const BRIDGE_BLOCKS = ['cobblestone', 'dirt', 'stone', 'cobbled_deepslate', 'netherrack', 'gravel']
+const BRIDGE_BLOCKS =['cobblestone', 'dirt', 'stone', 'cobbled_deepslate', 'netherrack', 'gravel']
 
 function findBridgeBlock(bot) {
     for (const name of BRIDGE_BLOCKS) {
@@ -98,12 +73,34 @@ function findBridgeBlock(bot) {
     return null
 }
 
+// what blocks the straight line from the bot toward `target`:
+// 'lava' | 'water' | 'gap' | null
+function blockingObstacleToward(bot, target, distance = 4) {
+    const dx0 = target.x - bot.entity.position.x
+    const dz0 = target.z - bot.entity.position.z
+    const dx = Math.abs(dx0) >= Math.abs(dz0) ? Math.sign(dx0) : 0
+    const dz = dx === 0 ? Math.sign(dz0) : 0
+    if (dx === 0 && dz === 0) return null
+
+    const base = bot.entity.position.floored()
+    for (let i = 1; i <= distance; i++) {
+        for (const dy of [0, 1]) {
+            const block = bot.blockAt(base.offset(dx * i, dy, dz * i))
+            if (block && block.name === 'lava') return 'lava'
+            if (block && block.name === 'water') return 'water'
+        }
+        const floor = bot.blockAt(base.offset(dx * i, -1, dz * i))
+        if (floor && floor.name === 'air') return 'gap'
+    }
+    return null
+}
+
 module.exports = {
     forwardCardinal,
     fluidAhead,
     fluidWidth,
     crossingTarget,
-    hasAlternateRoute,
     findBridgeBlock,
+    blockingObstacleToward,
     Vec3
 }

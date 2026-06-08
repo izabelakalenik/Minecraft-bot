@@ -1,5 +1,6 @@
 const moveTo = require('../movement/navigator')
 const { blockingObstacleToward } = require('../utils/terrain')
+const { collectDrops } = require('../utils/drops')
 
 async function mineBlock(bot, mcData, task) {
     const blockName = task.blockName
@@ -67,6 +68,9 @@ async function mineBlock(bot, mcData, task) {
                 await bot.dig(block)
                 collected++
                 console.log(`[MineBlock] Dug block (${collected}/${amountNeeded})`)
+
+                await bot.waitForTicks(10)
+                await collectDrops(bot, block.position)
             } else {
                 console.log(`[MineBlock] Cannot dig block`)
             }

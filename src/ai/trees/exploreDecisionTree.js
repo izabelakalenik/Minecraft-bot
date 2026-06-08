@@ -1,5 +1,12 @@
 const DECISION_TYPES = require('../decisionTypes')
 const minecraftData = require('minecraft-data')
+const { fluidAhead, fluidWidth, hasAlternateRoute } = require('../../utils/terrain')
+
+const WATER = ['water']
+const LAVA = ['lava']
+const DETECT_DISTANCE = 3
+// water wider than this is crossed by boat instead of swimming
+const SWIM_MAX_WIDTH = 20
 
 class ExploreDecisionTree {
     decide(state) {
@@ -8,6 +15,27 @@ class ExploreDecisionTree {
         if (state.lowHealth || state.threat) return null
 
         const bot = state.bot
+
+        // normal swimming and routing around lava are handled by the pathfinder during navigation;
+        // here we only cover the two cases it can't: wide water (boat) and lava with no detour (bridge)
+        const water = fluidAhead(bot, WATER, DETECT_DISTANCE)
+        if (water && fluidWidth(bot, WATER) > SWIM_MAX_WIDTH) {
+            return {
+                type: DECISION_TYPES.CRAFT_BOAT,
+                reason: 'Water too wide to swim, crossing by boat'
+            }
+        }
+
+        const lava = fluidAhead(bot, LAVA, DETECT_DISTANCE)
+        if (lava && !hasAlternateRoute(bot)) {
+            return {
+                type: DECISION_TYPES.BUILD_BRIDGE,
+                hazard: lava,
+                length: 5,
+                reason: 'Lava ahead with no detour, bridging across'
+            }
+        }
+
         const mcData = minecraftData(bot.version)
 
         const RESOURCES = [

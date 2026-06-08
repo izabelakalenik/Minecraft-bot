@@ -15,7 +15,6 @@ const findFood = require("../actions/findFood");
 const cookMeat = require("../actions/cookMeat");
 const craftItem = require("../actions/craftItem");
 const explore = require('../actions/explore')
-const crossByBoat = require('../actions/crossByBoat')
 const buildBridge = require('../actions/buildBridge')
 
 class BotController {
@@ -40,7 +39,6 @@ class BotController {
             [DECISION_TYPES.CRAFT_FURNACE]: (bot, decision) => craftItem(bot, decision.item, decision.amount || 1),
             [DECISION_TYPES.PLACE_FURNACE]: placeItem,
             [DECISION_TYPES.CRAFT_FOOD]: (bot, decision) => craftItem(bot, decision.food, decision.amount || 1),
-            [DECISION_TYPES.CRAFT_BOAT]: crossByBoat,
             [DECISION_TYPES.BUILD_BRIDGE]: buildBridge,
             [DECISION_TYPES.EXPLORE]: explore,
         }

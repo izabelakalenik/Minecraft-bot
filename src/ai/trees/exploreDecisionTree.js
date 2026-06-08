@@ -1,11 +1,6 @@
 const DECISION_TYPES = require('../decisionTypes')
 const minecraftData = require('minecraft-data')
-const { fluidAhead, fluidWidth, findBridgeBlock } = require('../../utils/terrain')
-
-const WATER = ['water']
-const DETECT_DISTANCE = 3
-// water wider than this is crossed by boat instead of swimming
-const SWIM_MAX_WIDTH = 20
+const { findBridgeBlock } = require('../../utils/terrain')
 
 class ExploreDecisionTree {
     decide(state) {
@@ -19,15 +14,8 @@ class ExploreDecisionTree {
             const { obstacle, target } = bot._blockedRoute
             bot._blockedRoute = null
 
-            if (obstacle === 'water') {
-                return {
-                    type: DECISION_TYPES.CRAFT_BOAT,
-                    target,
-                    reason: 'Blocked by water toward target, crossing by boat'
-                }
-            }
-
-            if (findBridgeBlock(bot)) {
+            // lava / gap -> bridge (water is left to the pathfinder, which swims across)
+            if (obstacle !== 'water' && findBridgeBlock(bot)) {
                 return {
                     type: DECISION_TYPES.BUILD_BRIDGE,
                     target,
@@ -35,16 +23,7 @@ class ExploreDecisionTree {
                     reason: `Blocked by ${obstacle} toward target, building a bridge`
                 }
             }
-            // no blocks to bridge: fall through and explore elsewhere
-        }
-
-
-        const water = fluidAhead(bot, WATER, DETECT_DISTANCE)
-        if (water && fluidWidth(bot, WATER) > SWIM_MAX_WIDTH) {
-            return {
-                type: DECISION_TYPES.CRAFT_BOAT,
-                reason: 'Water too wide to swim, crossing by boat'
-            }
+            // water, or no blocks to bridge: fall through and explore elsewhere
         }
 
         const mcData = minecraftData(bot.version)

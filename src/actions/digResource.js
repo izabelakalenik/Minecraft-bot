@@ -189,6 +189,11 @@ async function digResource(bot, targetName, amount = 1, options = {}) {
     bot.chat(`Digging ${amount} x ${normalized}`)
 
     while (attempts < maxAttempts) {
+        if (bot._aiAbort) {
+            console.log('[Dig] Aborted for a higher-priority action')
+            return
+        }
+
         const have = targetItemId ? bot.inventory.count(targetItemId) : 0
         if (targetItemId && have >= amount) {
             console.log(`[Dig] Done (${have}/${amount} ${normalized})`)

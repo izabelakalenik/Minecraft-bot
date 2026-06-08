@@ -24,11 +24,16 @@ class ThreatState {
     findThreat() {
         const hostileMobs = [
             'zombie',
+            'zombie_villager',
+            'zombie_horse',
+            'baby_zombie',
             'skeleton',
             'creeper',
             'spider',
             'witch',
-            'drowned'
+            'drowned',
+            'phantom',
+            'enderman',
         ]
 
         return this.bot.nearestEntity(entity => {

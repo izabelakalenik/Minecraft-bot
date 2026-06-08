@@ -15,10 +15,7 @@ class CommandController {
     }
 
     async handle(username, message) {
-        if (message === 'follow me') {
-            return this.follow(username)
-        }
-
+        // mode + read-only commands work in any mode
         if (message === 'manual') {
             return this.manual()
         }
@@ -33,6 +30,17 @@ class CommandController {
 
         if (message === 'inventory') {
             return this.inventory()
+        }
+
+        // everything below acts on the bot and requires manual mode first
+        if (!this.manualModeController.isEnabled()) {
+            this.bot.chat('Set the bot to manual mode first (type "manual")')
+            console.log('[Command] Rejected - bot is not in manual mode')
+            return
+        }
+
+        if (message === 'follow me') {
+            return this.follow(username)
         }
 
         if (message.startsWith('toss ')) {
@@ -63,7 +71,6 @@ class CommandController {
             this.bot.chat(`I can't see you`)
             return
         }
-        await this.manual()
         this.bot.chat(`Following ${username}`)
         console.log(`[Command] Following ${username}`)
 
@@ -102,8 +109,9 @@ class CommandController {
         const state = this.worldState.getPrintableState()
 
         const message =
-            `HP: ${state.health} | ` +
-            `Food: ${state.food} | ` +
+            `Mode: ${this.manualModeController.enabled ? 'Manual' : 'Auto'} | ` +
+            `HP: ${Number(state.health).toFixed(1)}/20 | ` +
+            `Food: ${Number(state.food).toFixed(1)}/20 | ` +
             `Night: ${state.isNight} | ` +
             `Threat: ${state.threat ?? 'none'} | ` +
             `Sheltered: ${state.isSheltered} | ` +
@@ -122,8 +130,6 @@ class CommandController {
     }
 
     async toss(message) {
-        await this.manual()
-
         const parts = message.split(' ')
         const itemName = parts[1]
         const amount = parts[2] ? Number(parts[2]) : 1
@@ -143,8 +149,6 @@ class CommandController {
     }
 
     async place(message) {
-        await this.manual()
-
         const parts = message.split(' ')
         const itemName = parts[1]
         const amount = parts[2] ? Number(parts[2]) : 1
@@ -164,8 +168,6 @@ class CommandController {
     }
 
     async eat() {
-        await this.manual()
-
         this.worldState.update()
         const food = this.worldState.bestFood
 
@@ -185,8 +187,6 @@ class CommandController {
     }
 
     async craft(message) {
-        await this.manual()
-
         const parts = message.split(' ')
         const itemName = parts[1]
         const amount = parts[2] ? Number(parts[2]) : 1
@@ -208,8 +208,6 @@ class CommandController {
     }
 
     async dig(message) {
-        await this.manual()
-
         const parts = message.split(' ')
         const itemName = parts[1]
         const amount = parts[2] ? Number(parts[2]) : 1

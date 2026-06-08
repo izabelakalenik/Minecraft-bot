@@ -1,4 +1,8 @@
 const minecraftData = require('minecraft-data')
+const { isRawMeat, FUEL_ITEMS } = require('../utils/meat')
+const { findCraftableFood, maxCraftableAmount } = require('../utils/food')
+
+const FURNACE_COBBLESTONE_COST = 8
 
 class InventoryState {
     constructor(bot) {
@@ -7,18 +11,88 @@ class InventoryState {
     }
 
     update() {
-        const woolCount = this.countItemsByPattern('wool')
-        const plankCount = this.countItemsByPattern('planks')
+        const cobblestoneCount = this.countItemsByName('cobblestone')
         const bestFood = this.getBestFood()
+        const rawMeat = this.getRawMeat()
+        const craftableFood = this.getCraftableFood()
         return {
             hasFood: bestFood !== null,
             bestFood: bestFood,
-            hasBedResources: woolCount >= 3 && plankCount >= 3,
+            rawMeat: rawMeat,
+            hasRawMeat: rawMeat !== null,
+            hasFuel: this.hasFuel(),
+            craftableFood: craftableFood ? craftableFood.name : null,
+            craftableFoodNeedsTable: craftableFood ? craftableFood.requiresTable : false,
+            craftableFoodAmount: craftableFood ? craftableFood.amount : 0,
+            canMakeTable: this.canMakeTable(),
+            hasFurnaceResources: cobblestoneCount >= FURNACE_COBBLESTONE_COST,
+            craftableBed: this.getCraftableBed(),
             bedInInventory:
                 this.bot.inventory.items().find(item =>
-                    item.name.includes('bed')
+                    item.name.endsWith('_bed')
+                ) || null,
+            furnaceInInventory:
+                this.bot.inventory.items().find(item =>
+                    item.name === 'furnace'
                 ) || null
         }
+    }
+
+    countItemsByName(name) {
+        return this.bot.inventory.items()
+            .filter(item => item.name === name)
+            .reduce((sum, item) => sum + item.count, 0)
+    }
+
+    getRawMeat() {
+        return this.bot.inventory.items().find(item =>
+            isRawMeat(item.name)
+        ) || null
+    }
+
+    hasFuel() {
+        return this.bot.inventory.items().some(item =>
+            FUEL_ITEMS.includes(item.name)
+        )
+    }
+
+    getCraftableFood() {
+        const counts = {}
+        for (const item of this.bot.inventory.items()) {
+            counts[item.name] = (counts[item.name] || 0) + item.count
+        }
+
+        const food = findCraftableFood(counts)
+        if (!food) return null
+
+        return {
+            name: food.name,
+            requiresTable: food.requiresTable,
+            amount: maxCraftableAmount(food, counts)
+        }
+    }
+
+    canMakeTable() {
+        const items = this.bot.inventory.items()
+        if (items.some(i => i.name === 'crafting_table')) return true
+        if (this.countItemsByPattern('planks') >= 4) return true
+        return items.some(i => i.name.endsWith('_log') || i.name.endsWith('_stem'))
+    }
+
+    getCraftableBed() {
+        if (this.countItemsByPattern('planks') < 3) return null
+
+        const woolCounts = {}
+        for (const item of this.bot.inventory.items()) {
+            if (item.name.endsWith('_wool')) {
+                woolCounts[item.name] = (woolCounts[item.name] || 0) + item.count
+            }
+        }
+
+        const woolName = Object.keys(woolCounts).find(name => woolCounts[name] >= 3)
+        if (!woolName) return null
+
+        return woolName.replace('_wool', '_bed')
     }
 
     countItemsByPattern(pattern) {

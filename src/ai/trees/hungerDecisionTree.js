@@ -44,31 +44,40 @@ class HungerDecisionTree {
             }
         }
 
-        // if an animal is closer than the crafting table, hunting it is the faster meal
+        const amount = state.craftableFoodAmount
         const tableNearby = !!state.nearbyCraftingTable
         const animalAvailable = !!state.nearbyAnimal
 
-        const huntInstead =
-            animalAvailable &&
-            (!tableNearby || state.animalDistance <= state.craftingTableDistance)
-
-        if (huntInstead) {
-            return {
-                type: DECISION_TYPES.FIND_FOOD,
-                source: 'animal',
-                target: state.nearbyAnimal,
-                reason: `${reason}: ${state.nearbyAnimal.name} closer than crafting table, hunting it`
-            }
-        }
-
-        return {
+        const craftFood = (note) => ({
             type: DECISION_TYPES.CRAFT_FOOD,
             food,
-            amount: state.craftableFoodAmount,
-            reason: tableNearby
-                ? `${reason}: crafting ${state.craftableFoodAmount} x ${food} at nearby table`
-                : `${reason}: crafting a table to make ${state.craftableFoodAmount} x ${food}`
+            amount,
+            reason: `${reason}: ${note}`
+        })
+
+        const huntAnimal = (note) => ({
+            type: DECISION_TYPES.FIND_FOOD,
+            source: 'animal',
+            target: state.nearbyAnimal,
+            reason: `${reason}: ${note}`
+        })
+
+        if (tableNearby) {
+            if (animalAvailable && state.animalDistance <= state.craftingTableDistance) {
+                return huntAnimal(`${state.nearbyAnimal.name} closer than crafting table, hunting it`)
+            }
+            return craftFood(`crafting ${amount} x ${food} at nearby table`)
         }
+
+        if (state.canMakeTable) {
+            return craftFood(`building a table from materials to make ${amount} x ${food}`)
+        }
+
+        if (animalAvailable) {
+            return huntAnimal(`no table or wood, hunting ${state.nearbyAnimal.name} instead`)
+        }
+
+        return craftFood(`no animal nearby, gathering wood to craft ${amount} x ${food}`)
     }
 
     cookMeatDecision(state, reason) {

@@ -24,6 +24,7 @@ class InventoryState {
             craftableFood: craftableFood ? craftableFood.name : null,
             craftableFoodNeedsTable: craftableFood ? craftableFood.requiresTable : false,
             craftableFoodAmount: craftableFood ? craftableFood.amount : 0,
+            canMakeTable: this.canMakeTable(),
             hasFurnaceResources: cobblestoneCount >= FURNACE_COBBLESTONE_COST,
             craftableBed: this.getCraftableBed(),
             bedInInventory:
@@ -69,6 +70,13 @@ class InventoryState {
             requiresTable: food.requiresTable,
             amount: maxCraftableAmount(food, counts)
         }
+    }
+
+    canMakeTable() {
+        const items = this.bot.inventory.items()
+        if (items.some(i => i.name === 'crafting_table')) return true
+        if (this.countItemsByPattern('planks') >= 4) return true
+        return items.some(i => i.name.endsWith('_log') || i.name.endsWith('_stem'))
     }
 
     getCraftableBed() {

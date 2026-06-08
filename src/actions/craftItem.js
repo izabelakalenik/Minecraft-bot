@@ -25,7 +25,7 @@ function getEntryName(mcData, id) {
 }
 
 function getRecipeInputs(recipe) {
-    // Prefer delta because it is what prismarine-recipe documents for ingredient accounting.
+    // prefer delta because it is what prismarine-recipe documents for ingredient accounting
     const deltaInputs = (recipe.delta || []).filter(r => r && typeof r.count === 'number' && r.count < 0)
     if (deltaInputs.length) return deltaInputs
 
@@ -74,18 +74,14 @@ function pickBestRecipe(recipes) {
     })[0]
 }
 
-async function findOrPlaceCraftingTable(bot, mcData, options = {}) {
+async function ensureCraftingTable(bot, mcData, options = {}, stack = new Set()) {
     const tableBlock = mcData.blocksByName.crafting_table
     if (!tableBlock) return null
 
     const searchDistance = options.tableSearchDistance ?? TABLE_SEARCH_DISTANCE
+    const findTable = () => bot.findBlock({ matching: tableBlock.id, maxDistance: searchDistance })
 
-    // walk to the nearest one rather than crafting a new one
-    const existing = bot.findBlock({
-        matching: tableBlock.id,
-        maxDistance: searchDistance
-    })
-
+    const existing = findTable()
     if (existing) {
         try {
             console.log(`[Craft] Going to nearest crafting table at ${existing.position}`)
@@ -93,31 +89,31 @@ async function findOrPlaceCraftingTable(bot, mcData, options = {}) {
             return existing
         } catch (err) {
             console.log(`[Craft] Could not reach nearest crafting table: ${err.message}`)
-            // fall through to placing one
         }
     }
 
-    // no existing table found/reachable - place one from inventory
     const tableItem = mcData.itemsByName.crafting_table
-    if (!tableItem) return null
-
-    if (bot.inventory.count(tableItem.id) < 1) return null
-
-    try {
-        await placeItem(bot, {
-            name: 'crafting_table',
-            amount: 1
-        })
-    } catch (err) {
-        console.log(`[Craft] Could not place crafting table: ${err.message}`)
+    if (tableItem && bot.inventory.count(tableItem.id) >= 1) {
+        console.log('[Craft] No table nearby, placing one from inventory')
+        try {
+            await placeItem(bot, { name: 'crafting_table', amount: 1 })
+            const placed = findTable()
+            if (placed) return placed
+        } catch (err) {
+            console.log(`[Craft] Could not place crafting table: ${err.message}`)
+        }
     }
 
-    const placed = bot.findBlock({
-        matching: tableBlock.id,
-        maxDistance: searchDistance
-    })
+    console.log('[Craft] No table nearby or in inventory, crafting one')
+    try {
+        await craftItem(bot, 'crafting_table', 1, options, stack)
+        await placeItem(bot, { name: 'crafting_table', amount: 1 })
+    } catch (err) {
+        console.log(`[Craft] Could not craft/place a crafting table: ${err.message}`)
+        return null
+    }
 
-    return placed || null
+    return findTable()
 }
 
 async function craftItem(bot, itemName, amount = 1, options = {}, stack = new Set()) {
@@ -146,7 +142,7 @@ async function craftItem(bot, itemName, amount = 1, options = {}, stack = new Se
     stack.add(normalized)
 
     try {
-        // Use prismarine-recipe for discovery, not Mineflayer's context-sensitive helpers.
+        // use prismarine-recipe for discovery, not Mineflayer's context-sensitive helpers
         let recipes = Recipe.find(entry.id, null) || []
 
         if (!recipes.length) {
@@ -169,24 +165,15 @@ async function craftItem(bot, itemName, amount = 1, options = {}, stack = new Se
         console.log(`[Craft] Resolved recipe for ${normalized}: ${describeRecipe(recipe, mcData)}`)
         bot.chat(`Recipe: ${describeRecipe(recipe, mcData)}`)
 
-        const craftingTableBlock = await findOrPlaceCraftingTable(bot, mcData, options)
-
-        // if the chosen recipe requires a table, make sure one exists
-        if (recipe.requiresTable && !craftingTableBlock) {
-            console.log(`[Craft] Recipe needs a crafting table, crafting one first...`)
-            bot.chat(`Making a crafting table first...`)
-
-            await craftItem(bot, 'crafting_table', 1, options, stack)
-
-            const placedTable = await findOrPlaceCraftingTable(bot, mcData, options)
-            if (!placedTable) {
-                throw new Error(`[Craft] Crafted a crafting table, but could not place/find it`)
-            }
-        }
-
+        // only deal with a crafting table when the recipe actually needs one:
+        // nearest nearby -> from inventory -> craft a new one
         const table = recipe.requiresTable
-            ? await findOrPlaceCraftingTable(bot, mcData, options)
+            ? await ensureCraftingTable(bot, mcData, options, stack)
             : null
+
+        if (recipe.requiresTable && !table) {
+            throw new Error(`[Craft] ${normalized} needs a crafting table but none could be obtained`)
+        }
 
         const resultCount = recipe.result?.count || 1
         const craftsNeeded = Math.ceil(remainingNeeded / resultCount)

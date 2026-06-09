@@ -7,7 +7,6 @@ class ThreatDecisionTree {
         if (state.isSheltered){
             return {
                 type: DECISION_TYPES.STAY_IN_SHELTER,
-                target: state.threat,
                 reason: 'Threat nearby but bot is safe in shelter',
             }
         }
@@ -22,9 +21,10 @@ class ThreatDecisionTree {
 
         if (state.threatIsClose) {
             return {
-                type: DECISION_TYPES.FIGHT,
+                type: DECISION_TYPES.FLEE,
                 target: state.threat,
-                reason: 'Threat is close enough to fight'
+                threats: state.threats,
+                reason: 'Threat detected'
             }
         }
 

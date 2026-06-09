@@ -1,5 +1,5 @@
 const moveTo = require('../movement/navigator')
-const { equipBestWeapon } = require('./equipItem')
+const {equipBestWeapon} = require('./equipItem')
 
 const ATTACK_RANGE = 3
 const ATTACK_DELAY = 500

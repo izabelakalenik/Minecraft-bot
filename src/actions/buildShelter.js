@@ -5,17 +5,9 @@ const MAX_DIG_DOWN_LEVELS = 3
 async function buildShelter(bot, decision) {
     console.log('[BuildShelter] Building shelter')
 
-    const blockItem = findPlaceableBlock(bot)
-
-    if (!blockItem) {
-        console.log('[BuildShelter] No block to close shelter')
-        return
-    }
-
-    await bot.equip(blockItem, 'hand')
-
     if (isSurroundedByWalls(bot) && canPlaceRoof(bot)) {
         console.log('[BuildShelter] Already surrounded, placing roof only')
+        await equipPlaceableBlock(bot)
         await placeRoof(bot)
         return
     }
@@ -37,10 +29,10 @@ async function buildShelter(bot, decision) {
         const originalY = bot.entity.position.y
 
         await bot.dig(blockBelow)
-
         console.log('[BuildShelter] Digging down')
 
         await fallIntoHole(bot, originalY)
+        await bot.waitForTicks(10)
     }
 
     if (!isSurroundedByWalls(bot)) {
@@ -53,8 +45,32 @@ async function buildShelter(bot, decision) {
         return
     }
 
-    await placeRoof(bot)
+    const equipped = await equipPlaceableBlock(bot)
+
+    if (!equipped) {
+        console.log('[BuildShelter] No block available after digging')
+        return
+    }
+
+    const roofPlaced = await placeRoof(bot)
+
+    if (!roofPlaced) {
+        console.log('[BuildShelter] Shelter not finished')
+        return
+    }
+
     console.log('[BuildShelter] Shelter finished')
+}
+
+async function equipPlaceableBlock(bot) {
+    const blockItem = findPlaceableBlock(bot)
+
+    if (!blockItem) {
+        return false
+    }
+
+    await bot.equip(blockItem, 'hand')
+    return true
 }
 
 function isSurroundedByWalls(bot) {
@@ -91,25 +107,26 @@ function canPlaceRoof(bot) {
 
 async function placeRoof(bot) {
     const pos = bot.entity.position.floored()
-
     const roofBlock = bot.blockAt(pos.offset(0, 2, 0))
 
     if (isSolidBlock(roofBlock)) {
         console.log('[BuildShelter] Roof already exists')
-        return
+        return true
     }
 
     const referenceBlock = findRoofReferenceBlock(bot, pos)
 
     if (!referenceBlock) {
         console.log('[BuildShelter] No reference block to place roof')
-        return
+        return false
     }
 
     try {
         await bot.placeBlock(referenceBlock.block, referenceBlock.faceVector)
+        return true
     } catch (err) {
         console.log(`[BuildShelter] Cannot place roof: ${err.message}`)
+        return false
     }
 }
 

@@ -45,8 +45,36 @@ class WorldState {
         return state
     }
 
-    printState() {
-        console.log('[State]', this.getPrintableState())
+    printState(mode = 'info') {
+        const state = this.getPrintableState()
+
+        if (mode === 'debug') {
+            console.log('[State]', state)
+            return
+        }
+
+        const importantState = {
+            health: state.health,
+            food: state.food,
+
+            isNight: state.isNight,
+            isSleeping: state.isSleeping,
+            isSheltered: state.isSheltered,
+
+            threat: state.threat,
+            threatDistance: state.threatDistance,
+
+            hasFood: state.hasFood,
+            bestFood: state.bestFood,
+
+            bedInInventory: state.bedInInventory,
+            craftableBed: state.craftableBed,
+
+            nearbyAnimal: state.nearbyAnimal,
+            animalDistance: state.animalDistance
+        }
+
+        console.log('[State]', importantState)
     }
 }
 

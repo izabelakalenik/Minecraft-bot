@@ -1,4 +1,4 @@
-const DECISION_INTERVAL = 3_000 // 3 seconds
+const DECISION_INTERVAL = 1_500 // 1.5 seconds
 
 const createBot = require('./bot/createBot')
 const setupPathfinder = require('./movement/pathfinder')
@@ -87,7 +87,12 @@ bot.once('spawn', () => {
                 return
             }
 
-            console.log('[Main] Decided on:', decision)
+            console.log(
+                `[Main] Decision: ${decision.type}` +
+                (decision.reason
+                    ? ` | Reason: ${decision.reason}`
+                    : '')
+            )
 
             await botController.execute(decision)
         }, DECISION_INTERVAL)

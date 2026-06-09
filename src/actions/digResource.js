@@ -2,6 +2,7 @@ const minecraftData = require('minecraft-data')
 const moveTo = require('../movement/navigator')
 const craftItem = require('./craftItem')
 const { blockingObstacleToward } = require('../utils/terrain')
+const { collectDrops } = require('../utils/drops')
 
 function normalizeName(name) {
     return String(name || '')
@@ -255,19 +256,7 @@ async function digResource(bot, targetName, amount = 1, options = {}) {
 
             await bot.waitForTicks(10)
 
-            const droppedItem = Object.values(bot.entities).find(entity =>
-                (entity.type === 'item' || entity.name === 'item') &&
-                entity.position.distanceTo(bot.entity.position) < 6
-            )
-
-            if (droppedItem) {
-                try {
-                    await moveTo(bot, droppedItem.position, 12000, 1.5)
-                    await bot.waitForTicks(6)
-                } catch (err) {
-                    console.log(`[Dig] Item pickup move failed: ${err.message}`)
-                }
-            }
+            await collectDrops(bot, liveBlock.position)
         } catch (err) {
             console.log(`[Dig] Error: ${err.message}`)
 

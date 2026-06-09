@@ -1,9 +1,8 @@
 const moveTo = require('../movement/navigator')
 const fight = require('./fight')
+const { collectDrops } = require('../utils/drops')
 
-const PICKUP_RADIUS = 8
 const SEARCH_TIMEOUT = 12000
-const MAX_PICKUPS = 6
 
 async function findFood(bot, decision) {
     switch (decision.source) {
@@ -30,7 +29,7 @@ async function huntAnimal(bot, decision) {
 
     await fight(bot, { target: animal })
 
-    await collectNearbyDrops(bot)
+    await collectDrops(bot)
 }
 
 async function harvestCrop(bot, decision) {
@@ -56,7 +55,7 @@ async function harvestCrop(bot, decision) {
             console.log(`[FindFood] Cannot harvest ${liveBlock.name}`)
         }
 
-        await collectNearbyDrops(bot)
+        await collectDrops(bot)
     } catch (err) {
         console.log(`[FindFood] Harvest error: ${err.message}`)
     }
@@ -73,25 +72,6 @@ async function searchForFood(bot) {
         await moveTo(bot, { x, y, z }, SEARCH_TIMEOUT, 2)
     } catch (err) {
         console.log(`[FindFood] Search wander failed: ${err.message}`)
-    }
-}
-
-async function collectNearbyDrops(bot) {
-    for (let i = 0; i < MAX_PICKUPS; i++) {
-        const drop = Object.values(bot.entities).find(entity =>
-            (entity.type === 'item' || entity.name === 'item') &&
-            entity.position.distanceTo(bot.entity.position) < PICKUP_RADIUS
-        )
-
-        if (!drop) break
-
-        try {
-            await moveTo(bot, drop.position, SEARCH_TIMEOUT, 1)
-            await bot.waitForTicks(6)
-        } catch (err) {
-            console.log(`[FindFood] Pickup failed: ${err.message}`)
-            break
-        }
     }
 }
 

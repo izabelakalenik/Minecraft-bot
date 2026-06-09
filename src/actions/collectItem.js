@@ -1,4 +1,5 @@
 const moveTo = require('../movement/navigator')
+const { collectDrops } = require('../utils/drops')
 
 // WARNING: If the bot cannot reach the block (e. g. wood is too high) 
 // or the block is not available in the area,
@@ -62,15 +63,7 @@ async function collectItem(bot, mcData, task) {
 
             await bot.waitForTicks(10)
 
-            const droppedItem = Object.values(bot.entities).find(entity =>
-                (entity.type === 'item' || entity.name === 'item') &&
-                entity.position.distanceTo(bot.entity.position) < 6
-            )
-
-            if (droppedItem) {
-                await moveTo(bot, droppedItem.position, 12000, 1.5)
-                await bot.waitForTicks(6)
-            }
+            await collectDrops(bot, block.position)
         } catch (err) {
             console.log(`[CollectItem] Error: ${err.message}`)
         }

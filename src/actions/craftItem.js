@@ -7,6 +7,7 @@ const moveTo = require('../movement/navigator')
 
 const TABLE_SEARCH_DISTANCE = 64
 const TABLE_REACH = 3
+const WOOD_SEARCH_DISTANCE = 300
 
 function normalizeName(name) {
     return String(name || '')
@@ -60,10 +61,54 @@ function describeRecipe(recipe, mcData) {
     return `${resultCount} x ${resultName} | requiresTable=${Boolean(recipe.requiresTable)} | inputs=${inputs || 'none'}`
 }
 
-function pickBestRecipe(recipes) {
+function woodPrefix(name) {
+    const match = normalizeName(name).match(/^(.+?)_(planks|log|stem|wood|hyphae)$/)
+    return match ? match[1] : null
+}
+
+function isLogName(name) {
+    return /_(log|stem|wood|hyphae)$/.test(normalizeName(name))
+}
+
+function recipeWoodType(recipe, mcData) {
+    for (const input of getRecipeInputs(recipe)) {
+        const wood = woodPrefix(getEntryName(mcData, input.id))
+        if (wood) return wood
+    }
+    return null
+}
+
+// pick the wood species to use so the bot is not locked to oak: prefer what it
+// already carries, otherwise the nearest log in the world
+function choosePreferredWood(bot, mcData) {
+    const items = bot.inventory.items()
+
+    const plank = items.find(i => /_planks$/.test(i.name))
+    if (plank) return woodPrefix(plank.name)
+
+    const log = items.find(i => isLogName(i.name))
+    if (log) return woodPrefix(log.name)
+
+    const block = bot.findBlock({
+        matching: b => b && b.name && isLogName(b.name),
+        maxDistance: WOOD_SEARCH_DISTANCE
+    })
+    if (block) return woodPrefix(block.name)
+
+    return null
+}
+
+function pickBestRecipe(recipes, mcData, preferredWood) {
     if (!recipes || recipes.length === 0) return null
 
-    return [...recipes].sort((a, b) => {
+    // when several recipes differ only by wood species, keep the preferred one
+    let pool = recipes
+    if (preferredWood) {
+        const matching = recipes.filter(r => recipeWoodType(r, mcData) === preferredWood)
+        if (matching.length) pool = matching
+    }
+
+    return [...pool].sort((a, b) => {
         const aInputs = getRecipeInputs(a).length
         const bInputs = getRecipeInputs(b).length
         if (aInputs !== bInputs) return aInputs - bInputs
@@ -160,7 +205,12 @@ async function craftItem(bot, itemName, amount = 1, options = {}, stack = new Se
             throw new Error(`[Craft] No recipe or gather source for ${normalized}`)
         }
 
-        let recipe = pickBestRecipe(recipes)
+        let preferredWood = null
+        if (recipes.length > 1 && recipes.some(r => recipeWoodType(r, mcData))) {
+            preferredWood = choosePreferredWood(bot, mcData)
+        }
+
+        let recipe = pickBestRecipe(recipes, mcData, preferredWood)
 
         console.log(`[Craft] Resolved recipe for ${normalized}: ${describeRecipe(recipe, mcData)}`)
         bot.chat(`Recipe: ${describeRecipe(recipe, mcData)}`)
